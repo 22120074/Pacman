@@ -202,9 +202,9 @@ def pinky_dfs(Cell_Width, Cell_Height):
         # Trạng thái ban đầu chưa có hướng đi
         if(nowDirections == (0, 0)):
             nowDirections = Right
-            if((pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (red_x, red_y)):
+            if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
                 pinky_x += nowDirections[0]
                 pinky_y += nowDirections[1]
         # Đang ở trong lồng, đi ra ngoài
@@ -213,15 +213,15 @@ def pinky_dfs(Cell_Width, Cell_Height):
                     or ((pinky_x, pinky_y) == (450, 360)) or ((pinky_x, pinky_y) == (450, 336)) or ((pinky_x, pinky_y) == (450, 384))
                     or ((pinky_x, pinky_y) == (420, 312)) or ((pinky_x, pinky_y) == (450, 312))):
                 nowDirections = Up
-                if((pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (red_x, red_y)):
+                if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
             else:
-                if((pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (red_x, red_y)):
+                if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
     # Sau khi bước qua cổng lồng thì quẹo trái hoặc phải
@@ -229,9 +229,9 @@ def pinky_dfs(Cell_Width, Cell_Height):
         chosen_direction = random.choice(["Right", "Left"])
         nowDirections = Directions[chosen_direction]
         gate_state = 1
-        if((pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
-                and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (orange_x, orange_y)
-                and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (red_x, red_y)):
+        if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
+                and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
+                and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
             if (pinky_x, pinky_y) not in visited_pink_Stack:
                 # Thêm ô vào danh sách đã đi qua
                 visited_pink_Stack.add((pinky_x, pinky_y))
@@ -270,9 +270,9 @@ def pinky_dfs(Cell_Width, Cell_Height):
                     if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2 
                             and (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
                             and nowDirections != opposite
-                            and (pinky_x + direction[0], pinky_y + direction[1]) != (blue_x, blue_y)
-                            and (pinky_x + direction[0], pinky_y + direction[1]) != (orange_x, orange_y)
-                            and (pinky_x + direction[0], pinky_y + direction[1]) != (red_x, red_y)):
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (blue_x, blue_y)
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (orange_x, orange_y)
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (red_x, red_y)):
                         nowDirections = direction
                         pinky_x += direction[0]
                         pinky_y += direction[1]
@@ -312,9 +312,9 @@ def pinky_dfs(Cell_Width, Cell_Height):
                     if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2
                             and (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
                             and nowDirections != opposite
-                            and (pinky_x + direction[0], pinky_y + direction[1]) != (blue_x, blue_y)
-                            and (pinky_x + direction[0], pinky_y + direction[1]) != (orange_x, orange_y)
-                            and (pinky_x + direction[0], pinky_y + direction[1]) != (red_x, red_y)):
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (blue_x, blue_y)
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (orange_x, orange_y)
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (red_x, red_y)):
                         nowDirections = direction
                         pinky_x += direction[0]
                         pinky_y += direction[1]
@@ -323,15 +323,15 @@ def pinky_dfs(Cell_Width, Cell_Height):
             elif(Road[(pinky_y) // Cell_Height][pinky_x // Cell_Width] == 1
                     and (pinky_x // Cell_Width) == (pinky_x / Cell_Width)
                     and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)
-                    and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
-                    and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (orange_x, orange_y)
-                    and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (red_x, red_y)):
+                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
+                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
+                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
                 pinky_x += nowDirections[0]
                 pinky_y += nowDirections[1]
             else:
                 if((pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (red_x, red_y)):
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
         # Back tracking
@@ -425,12 +425,12 @@ while run:
         # Vẽ Pinky
         # Test_DFS()
         pinky_dfs(Cell_Width, Cell_Height)
-        # Bắt nhau
+        # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
             Catched = True
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
-        # Bắt nhau
+        # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
             Catched = True
 
