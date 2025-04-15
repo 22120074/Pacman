@@ -351,7 +351,13 @@ def pinky_dfs(Cell_Width, Cell_Height):
 
         # Thiết lập lại trạng thái
         pinky_state = 0
-        check_road = False 
+        check_road = False
+
+# Hàm này để xem đường đi của Pinky
+def Test_DFS():
+    global road_Stack
+    for(x, y) in road_Stack:
+        pygame.draw.circle(Screen, 'pink', (x + 0.5 * Cell_Width, y + 0.5 * Cell_Height), 4)
 
 # # # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
@@ -401,7 +407,7 @@ def draw_Pacman(Cell_Width, Cell_Height):
         Screen.blit(pacman_image,  (pacman_x, pacman_y))
     else:
         pygame.draw.circle(Screen, Yellow, (pacman_x, pacman_y), 4)
-    
+
 run = True
 Catched = False
 while run:
@@ -411,6 +417,7 @@ while run:
     if not Catched:
         draw_map()
         # Vẽ Pinky
+        # Test_DFS()
         pinky_dfs(Cell_Width, Cell_Height)
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
