@@ -1,10 +1,8 @@
 # Code Pacman Br BR bR
 import pygame
-import threading
 import copy
 from Board import boards
 from Board import road
-import pygame
 import math
 import random
 
@@ -199,8 +197,6 @@ check_road = False          # Kiểm tra ngã rẽ khi đang back-tracking
 def pinky_dfs(Cell_Width, Cell_Height):
     global pinky_x, pinky_y, nowDirections, shuffled_Directions, visited_pink_Stack
     global road_Stack, pinky_state, check_road, chosen_direction, gate_state
-    # Vẽ Pinky
-    draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height)
     # Nếu đang ở trong lồng, ta đi ra khỏi lồng rồi bắt Pacman
     if((pinky_x >= 360 and pinky_x <= 510) and (pinky_y > 288 and pinky_y <= 384)):
         # Trạng thái ban đầu chưa có hướng đi
@@ -342,16 +338,19 @@ def pinky_dfs(Cell_Width, Cell_Height):
         elif(pinky_state == 1):
             if len(road_Stack) > 0:
                 pinky_x, pinky_y = road_Stack.pop()
-            if(len(road_Stack) == 0):
+            if len(road_Stack) == 0:
                 visited_pink_Stack.clear()
                 pinky_state = 0
                 check_road = False
                 gate_state = 0
-                print(1)
 
         # Thiết lập lại trạng thái
         pinky_state = 0
         check_road = False
+    
+    # Vẽ Pinky
+    draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height)
+
 
 # Hàm này để xem đường đi của Pinky
 def Test_DFS():
@@ -401,8 +400,13 @@ def draw_Pacman(Cell_Width, Cell_Height):
                 pacman_x += direction_command[0]
                 pacman_y += direction_command[1]
         else:
-            pacman_x += direction_command[0]
-            pacman_y += direction_command[1]
+            if(new_direction_command == opposite):
+                direction_command = new_direction_command
+                pacman_x += direction_command[0]
+                pacman_y += direction_command[1]
+            else:
+                pacman_x += direction_command[0]
+                pacman_y += direction_command[1]
     if pacman_image:  
         Screen.blit(pacman_image,  (pacman_x, pacman_y))
     else:
@@ -414,15 +418,22 @@ while run:
     Timer.tick(FPS)
     # Vẽ bản đồ
     Screen.fill((0, 0, 0))  # Vẽ lại nền đen
-    if not Catched:
+    if Catched:
+        draw_game_over()
+    else:
         draw_map()
         # Vẽ Pinky
         # Test_DFS()
         pinky_dfs(Cell_Width, Cell_Height)
+        # Bắt nhau
+        if(pacman_x == pinky_x and pacman_y == pinky_y):
+            Catched = True
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
-    else:
-        draw_game_over()
+        # Bắt nhau
+        if(pacman_x == pinky_x and pacman_y == pinky_y):
+            Catched = True
+
     # Check for events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -437,6 +448,8 @@ while run:
                 direction_type = 2
             if event.key == pygame.K_DOWN:
                 direction_type = 3
+            if event.key == pygame.K_SPACE:
+                direction_command = 4
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT and direction_type == 0:
                 new_direction_command = Right   
@@ -446,9 +459,11 @@ while run:
                 new_direction_command = Up
             if event.key == pygame.K_DOWN and direction_type == 3:
                 new_direction_command = Down
-
-    if(pacman_x == pinky_x and pacman_y == pinky_y):
-        Catched = True
+            if event.key == pygame.K_SPACE and direction_type == 4:
+                run = True
+                Catched = False
+                pinky_x, pinky_y = 390, 360
+                pacman_x, pacman_y = 420, 576
     
     # pygame.time.delay(100)  # Delay để dễ dàng xem chuyển động
     pygame.display.flip()   # Tải lại hiệu ứng mới
