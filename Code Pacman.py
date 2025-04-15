@@ -28,9 +28,9 @@ Cell_Height = ((Height - 50) // 32) # 24 pixel
 Cell_Width = (Width // 30)          # 30 pixel
 
 # Load ảnh
-pinky_image = pygame.image.load("Pinky.png")  # Đường dẫn đến ảnh Pinky
+pinky_image = pygame.image.load("Images/Pinky.png")  # Đường dẫn đến ảnh Pinky
 pinky_image = pygame.transform.scale(pinky_image, (Cell_Width, Cell_Height))  # Resize ảnh
-pacman_image = pygame.image.load("Pacman.jpg")  # Đường dẫn đến ảnh Pacman
+pacman_image = pygame.image.load("Images/Pacman.jpg")  # Đường dẫn đến ảnh Pacman
 pacman_image = pygame.transform.scale(pacman_image, (Cell_Width, Cell_Height))  # Resize ảnh
 
 # Khung và Tiêu đề
@@ -449,7 +449,7 @@ while run:
             if event.key == pygame.K_DOWN:
                 direction_type = 3
             if event.key == pygame.K_SPACE:
-                direction_command = 4
+                direction_type = 4
         if event.type == pygame.KEYUP:
             if event.key == pygame.K_RIGHT and direction_type == 0:
                 new_direction_command = Right   
@@ -460,10 +460,24 @@ while run:
             if event.key == pygame.K_DOWN and direction_type == 3:
                 new_direction_command = Down
             if event.key == pygame.K_SPACE and direction_type == 4:
-                run = True
                 Catched = False
-                pinky_x, pinky_y = 390, 360
+                # Pinky
+                pinky_x = 390 # Đây là trường hợp Pinky ở trong lồng
+                pinky_y = 360
+                chosen_direction = random.choice(["Right", "Left"])
+                nowDirections = (0, 0)
+                visited_pink_Stack.clear()
+                road_Stack.clear()
+                pinky_state = 0             
+                gate_state = 0              
+                check_road = False          
+                # Pacman
                 pacman_x, pacman_y = 420, 576
+                direction_command = (0, 0)
+                new_direction_command = (0, 0)
+                direction_type = 0
+
+
     
     # pygame.time.delay(100)  # Delay để dễ dàng xem chuyển động
     pygame.display.flip()   # Tải lại hiệu ứng mới
