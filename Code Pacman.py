@@ -32,6 +32,8 @@ pinky_image = pygame.image.load("Images/Pinky.png")  # Đường dẫn đến �
 pinky_image = pygame.transform.scale(pinky_image, (Cell_Width, Cell_Height))  # Resize ảnh
 pacman_image = pygame.image.load("Images/Pacman.jpg")  # Đường dẫn đến ảnh Pacman
 pacman_image = pygame.transform.scale(pacman_image, (Cell_Width, Cell_Height))  # Resize ảnh
+orange_image = pygame.image.load("Images/Orange.png")  # Đường dẫn đến ảnh Orange
+orange_image = pygame.transform.scale(orange_image, (Cell_Width, Cell_Height))  # Resize ảnh
 
 # Khung và Tiêu đề
 Screen = pygame.display.set_mode((Width, Height))
@@ -49,6 +51,7 @@ Pink = (255, 192, 203)
 Yellow = (255, 255, 0)
 Blue = (0, 0, 255)
 Red = (255, 0, 0)
+Orange = (255, 165, 0)
 
 # Hàm hiển thị dòng chữ Game Over
 def draw_game_over():
@@ -150,18 +153,10 @@ def draw_road(Cell_Width=Cell_Width, Cell_Height=Cell_Height):
             if Road[i][j] == 4:
                 pygame.draw.circle(Screen, 'white', (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + (0.5 * Cell_Height)), 20)
 
-# Vẽ Pinky
-def draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height):
-    if pinky_image:  
-        Screen.blit(pinky_image, (pinky_x, pinky_y))
-    else:
-        pygame.draw.circle(Screen, Pink, pinky_x, pinky_y, 4)
 # # # Biến cho Ghost khác -----------------------------------------------------------------------
-global blue_x, blue_y, orange_x, orange_y, red_x, red_y
+global blue_x, blue_y, red_x, red_y
 blue_x = 0
 blue_y = 0
-orange_x = 0
-orange_y = 0
 red_x = 0
 red_y = 0
 # # # Biến cho Pinky ----------------------------------------------------------------------------
@@ -192,6 +187,13 @@ road_Stack = []             # .append() để thêm, .pop() để xóa
 pinky_state = 0             # 0: bình thường, 1: back tracking
 gate_state = 0              # 0: chưa qua cổng, 1: đã qua cổng
 check_road = False          # Kiểm tra ngã rẽ khi đang back-tracking
+
+# Vẽ Pinky
+def draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height):
+    if pinky_image:  
+        Screen.blit(pinky_image, (pinky_x, pinky_y))
+    else:
+        pygame.draw.circle(Screen, Pink, pinky_x, pinky_y, 4)
 
 # Pinky - DFS
 def pinky_dfs(Cell_Width, Cell_Height):
@@ -351,14 +353,26 @@ def pinky_dfs(Cell_Width, Cell_Height):
     # Vẽ Pinky
     draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height)
 
-
 # Hàm này để xem đường đi của Pinky
 def Test_DFS():
     global road_Stack
     for(x, y) in road_Stack:
         pygame.draw.circle(Screen, 'pink', (x + 0.5 * Cell_Width, y + 0.5 * Cell_Height), 4)
 
-# # # # Biến cho Pacman ----------------------------------------------------------------------------
+# # # Biến cho Orange ----------------------------------------------------------------------------
+global orange_x, orange_y
+# Vị trí ban đầu của Orange
+orange_x = 420
+orange_y = 288
+
+# Vẽ Orange
+def draw_orange(Cell_Width, Cell_Height):
+    if orange_image:  
+        Screen.blit(orange_image, (orange_x, orange_y))
+    else:
+        pygame.draw.circle(Screen, Orange, orange_x, orange_y, 4)
+
+# # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
 global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
 pacman_x = 420
@@ -425,13 +439,19 @@ while run:
         # Vẽ Pinky
         # Test_DFS()
         pinky_dfs(Cell_Width, Cell_Height)
+        # # Vẽ Orange
+        # draw_orange(Cell_Width, Cell_Height)
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
+            Catched = True
+        elif(pacman_x == orange_x and pacman_y == orange_y):
             Catched = True
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
+            Catched = True
+        elif(pacman_x == orange_x and pacman_y == orange_y):
             Catched = True
 
     # Check for events
