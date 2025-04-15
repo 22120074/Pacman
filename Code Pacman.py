@@ -6,6 +6,8 @@ from Board import road
 import math
 import random
 
+import heapq
+
 pygame.init()
 
 # Cấu hình màn hình
@@ -17,7 +19,7 @@ Flicker = False
 PI = math.pi
 
 # Hướng đi
-Speed = 2
+Speed = 1
 Up = (0, -1 * Speed)
 Down = (0, Speed)
 Left = (-1 * Speed, 0)
@@ -30,10 +32,12 @@ Cell_Width = (Width // 30)          # 30 pixel
 # Load ảnh
 pinky_image = pygame.image.load("Images/Pinky.png")  # Đường dẫn đến ảnh Pinky
 pinky_image = pygame.transform.scale(pinky_image, (Cell_Width, Cell_Height))  # Resize ảnh
+blinky_image = pygame.image.load("Images/Blinky.png")  # Đường dẫn đến ảnh Blinky
+blinky_image = pygame.transform.scale(blinky_image, (Cell_Width, Cell_Height))  # Resize ảnh
 pacman_image = pygame.image.load("Images/Pacman.jpg")  # Đường dẫn đến ảnh Pacman
 pacman_image = pygame.transform.scale(pacman_image, (Cell_Width, Cell_Height))  # Resize ảnh
-orange_image = pygame.image.load("Images/Orange.png")  # Đường dẫn đến ảnh Orange
-orange_image = pygame.transform.scale(orange_image, (Cell_Width, Cell_Height))  # Resize ảnh
+# orange_image = pygame.image.load("Images/Orange.png")  # Đường dẫn đến ảnh Orange
+# orange_image = pygame.transform.scale(orange_image, (Cell_Width, Cell_Height))  # Resize ảnh
 
 # Khung và Tiêu đề
 Screen = pygame.display.set_mode((Width, Height))
@@ -154,19 +158,17 @@ def draw_road(Cell_Width=Cell_Width, Cell_Height=Cell_Height):
                 pygame.draw.circle(Screen, 'white', (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + (0.5 * Cell_Height)), 20)
 
 # # # Biến cho Ghost khác -----------------------------------------------------------------------
-global blue_x, blue_y, red_x, red_y
+global blue_x, blue_y, blinky_x, blinky_y
 blue_x = 0
 blue_y = 0
-red_x = 0
-red_y = 0
+
+
 # # # Biến cho Pinky ----------------------------------------------------------------------------
 global pinky_x, pinky_y, nowDirections, shuffled_Directions, visited_pink_Stack, chosen_direction
 global road_Stack, pinky_state, check_road, gate_state
-# Vị trí ban đầu của Pinky
-# pinky_x = 420 # Đây là trường hợp Pinky ở ngoài lồng
-# pinky_y = 288
 pinky_x = 390 # Đây là trường hợp Pinky ở trong lồng
 pinky_y = 360
+
 # Các hướng đi
 chosen_direction = random.choice(["Right", "Left"])
 Directions = {
@@ -195,6 +197,7 @@ def draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height):
     else:
         pygame.draw.circle(Screen, Pink, pinky_x, pinky_y, 4)
 
+
 # Pinky - DFS
 def pinky_dfs(Cell_Width, Cell_Height):
     global pinky_x, pinky_y, nowDirections, shuffled_Directions, visited_pink_Stack
@@ -205,8 +208,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
         if(nowDirections == (0, 0)):
             nowDirections = Right
             if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
+                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                 pinky_x += nowDirections[0]
                 pinky_y += nowDirections[1]
         # Đang ở trong lồng, đi ra ngoài
@@ -216,14 +218,12 @@ def pinky_dfs(Cell_Width, Cell_Height):
                     or ((pinky_x, pinky_y) == (420, 312)) or ((pinky_x, pinky_y) == (450, 312))):
                 nowDirections = Up
                 if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
             else:
                 if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
     # Sau khi bước qua cổng lồng thì quẹo trái hoặc phải
@@ -232,8 +232,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
         nowDirections = Directions[chosen_direction]
         gate_state = 1
         if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
-                and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
-                and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
+                and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
             if (pinky_x, pinky_y) not in visited_pink_Stack:
                 # Thêm ô vào danh sách đã đi qua
                 visited_pink_Stack.add((pinky_x, pinky_y))
@@ -273,8 +272,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
                             and (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
                             and nowDirections != opposite
                             and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (blue_x, blue_y)
-                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (orange_x, orange_y)
-                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (red_x, red_y)):
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                         nowDirections = direction
                         pinky_x += direction[0]
                         pinky_y += direction[1]
@@ -315,8 +313,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
                             and (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
                             and nowDirections != opposite
                             and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (blue_x, blue_y)
-                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (orange_x, orange_y)
-                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (red_x, red_y)):
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                         nowDirections = direction
                         pinky_x += direction[0]
                         pinky_y += direction[1]
@@ -326,14 +323,12 @@ def pinky_dfs(Cell_Width, Cell_Height):
                     and (pinky_x // Cell_Width) == (pinky_x / Cell_Width)
                     and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)
                     and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
-                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
-                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
+                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                 pinky_x += nowDirections[0]
                 pinky_y += nowDirections[1]
             else:
                 if((pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
-                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
         # Back tracking
@@ -353,30 +348,132 @@ def pinky_dfs(Cell_Width, Cell_Height):
     # Vẽ Pinky
     draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height)
 
+# # # Biến cho Blinky ----------------------------------------------------------------------------
+blinky_x = 420
+blinky_y = 360
+
+def heuristic(a, b):
+    return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+def is_walkable(x, y):
+    if 0 <= y < len(boards) and 0 <= x < len(boards[0]):
+        return boards[y][x] in [0, 1, 2]  # có thể tuỳ chỉnh thêm
+    return False
+
+# Hàm A* để tìm đường đi:
+def a_star(start, goal):
+    open_set = []
+    heapq.heappush(open_set, (0, start))
+    came_from = {}
+    g_score = {start: 0}
+    f_score = {start: heuristic(start, goal)}
+
+    while open_set:
+        _, current = heapq.heappop(open_set)
+
+        if current == goal:
+            # reconstruct path
+            path = []
+            while current in came_from:
+                path.append(current)
+                current = came_from[current]
+            path.reverse()
+            return path
+
+        x, y = current
+        for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
+            neighbor = (x + dx, y + dy)
+            if not is_walkable(neighbor[0], neighbor[1]):
+                continue
+
+            tentative_g = g_score[current] + 1
+            if neighbor not in g_score or tentative_g < g_score[neighbor]:
+                came_from[neighbor] = current
+                g_score[neighbor] = tentative_g
+                f_score[neighbor] = tentative_g + heuristic(neighbor, goal)
+                heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+    return None
+
+def pixel_to_cell(x, y):
+    return (x // Cell_Width, y // Cell_Height)
+
+def cell_to_pixel(cell_x, cell_y):
+    return (cell_x * Cell_Width, cell_y * Cell_Height)
+
+
+def astar_path(start_pixel, goal_pixel, Cell_Width, Cell_Height):
+    start_cell = pixel_to_cell(start_pixel[0], start_pixel[1])
+    goal_cell = pixel_to_cell(goal_pixel[0], goal_pixel[1])
+
+    path_cells = a_star(start_cell, goal_cell)
+
+    if path_cells:
+        # Đổi các ô (cell) thành pixel
+        path_pixels = [cell_to_pixel(x, y) for (x, y) in path_cells]
+        return path_pixels
+    else:
+        return None
+    
+# Vẽ Blinky
+def draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height):
+    if blinky_image:  
+        Screen.blit(blinky_image, (blinky_x, blinky_y))
+    else:
+        pygame.draw.circle(Screen, Red, blinky_x, blinky_y, 4)
+
+# Tốc độ Blinky mỗi frame (đi 2 pixel mỗi frame)
+BLINKY_SPEED = 1
+blinky_path = []
+
+def blinky_astar(Cell_Width, Cell_Height):
+    global blinky_x, blinky_y, nowDirections, gate_state, pacman_x, pacman_y
+
+    blinky_pos = (blinky_x, blinky_y)
+    pacman_pos = (pacman_x, pacman_y)
+
+    if (blinky_x >= 360 and blinky_x <= 510) and (blinky_y > 288 and blinky_y <= 384):
+        # Trong lồng, đi lên
+        nowDirections = Up
+        blinky_x += nowDirections[0]
+        blinky_y += nowDirections[1]
+    elif ((blinky_x, blinky_y) == (420, 288) or (blinky_x, blinky_y) == (450, 288)) and gate_state == 0:
+        # Vừa ra khỏi cổng
+        gate_state = 1
+        nowDirections = Directions[random.choice(["Left", "Right"])]
+        blinky_x += nowDirections[0]
+        blinky_y += nowDirections[1]
+    else:
+        # Dùng A* để tìm đường
+        path = astar_path(blinky_pos, pacman_pos, Cell_Width, Cell_Height)
+        if path and len(path) > 0:
+            next_x, next_y = path[0]
+
+            dx = next_x - blinky_x
+            dy = next_y - blinky_y
+            distance = math.hypot(dx, dy)
+
+            if distance != 0:
+                move_x = int(BLINKY_SPEED * dx // distance)
+                move_y = int(BLINKY_SPEED * dy // distance)
+                blinky_x += move_x
+                blinky_y += move_y
+
+    draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height)
+
+
 # Hàm này để xem đường đi của Pinky
 def Test_DFS():
     global road_Stack
     for(x, y) in road_Stack:
         pygame.draw.circle(Screen, 'pink', (x + 0.5 * Cell_Width, y + 0.5 * Cell_Height), 4)
 
-# # # Biến cho Orange ----------------------------------------------------------------------------
-global orange_x, orange_y
-# Vị trí ban đầu của Orange
-orange_x = 420
-orange_y = 288
-
-# Vẽ Orange
-def draw_orange(Cell_Width, Cell_Height):
-    if orange_image:  
-        Screen.blit(orange_image, (orange_x, orange_y))
-    else:
-        pygame.draw.circle(Screen, Orange, orange_x, orange_y, 4)
 
 # # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
 global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
-pacman_x = 420
-pacman_y = 576
+pacman_x = 24 * 30
+pacman_y = 30 * 24
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
 new_direction_command = (0, 0)
@@ -428,6 +525,23 @@ def draw_Pacman(Cell_Width, Cell_Height):
 
 run = True
 Catched = False
+
+# Gán key tương ứng với hướng
+key_to_direction = {
+    pygame.K_RIGHT: 0,
+    pygame.K_d: 0,
+    pygame.K_LEFT: 1,
+    pygame.K_a: 1,
+    pygame.K_UP: 2,
+    pygame.K_w: 2,
+    pygame.K_DOWN: 3,
+    pygame.K_s: 3,
+}
+
+# Khởi tạo ban đầu
+direction_type = -1
+new_direction_command = (0, 0)
+
 while run:
     Timer.tick(FPS)
     # Vẽ bản đồ
@@ -438,20 +552,17 @@ while run:
         draw_map()
         # Vẽ Pinky
         # Test_DFS()
-        pinky_dfs(Cell_Width, Cell_Height)
+        # pinky_dfs(Cell_Width, Cell_Height)
+        blinky_astar(Cell_Width, Cell_Height)
         # # Vẽ Orange
         # draw_orange(Cell_Width, Cell_Height)
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
-        if(pacman_x == pinky_x and pacman_y == pinky_y):
-            Catched = True
-        elif(pacman_x == orange_x and pacman_y == orange_y):
+        if(pacman_x == pinky_x and pacman_y == pinky_y) or (pacman_x == blinky_x and pacman_y == blinky_y):
             Catched = True
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
-        if(pacman_x == pinky_x and pacman_y == pinky_y):
-            Catched = True
-        elif(pacman_x == orange_x and pacman_y == orange_y):
+        if(pacman_x == pinky_x and pacman_y == pinky_y) or (pacman_x == blinky_x and pacman_y == blinky_y):
             Catched = True
 
     # Check for events
@@ -459,27 +570,22 @@ while run:
         if event.type == pygame.QUIT:
             run = False
         # Kiểm tra nhấn phím
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT:
-                direction_type = 0
-            if event.key == pygame.K_LEFT:
-                direction_type = 1
-            if event.key == pygame.K_UP:
-                direction_type = 2
-            if event.key == pygame.K_DOWN:
-                direction_type = 3
-            if event.key == pygame.K_SPACE:
-                direction_type = 4
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_RIGHT and direction_type == 0:
-                new_direction_command = Right   
-            if event.key == pygame.K_LEFT and direction_type == 1:
-                new_direction_command = Left
-            if event.key == pygame.K_UP and direction_type == 2:
-                new_direction_command = Up
-            if event.key == pygame.K_DOWN and direction_type == 3:
-                new_direction_command = Down
-            if event.key == pygame.K_SPACE and direction_type == 4:
+        elif event.type == pygame.KEYDOWN:
+            if event.key in key_to_direction:
+                direction_type = key_to_direction[event.key]
+
+        elif event.type == pygame.KEYUP:
+            if event.key in key_to_direction and direction_type == key_to_direction[event.key]:
+                if direction_type == 0:
+                    new_direction_command = Right
+                elif direction_type == 1:
+                    new_direction_command = Left
+                elif direction_type == 2:
+                    new_direction_command = Up
+                elif direction_type == 3:
+                    new_direction_command = Down
+
+            elif event.key == pygame.K_SPACE:
                 Catched = False
                 # Pinky
                 pinky_x = 390 # Đây là trường hợp Pinky ở trong lồng
