@@ -53,19 +53,32 @@ Blue = (0, 0, 255)
 Red = (255, 0, 0)
 Orange = (255, 165, 0)
 
+# Hàm hiển thị hướng dẫn di chuyển
+def draw_instructions():
+    # Khởi tạo font (None, 20)
+    font_20 = pygame.font.Font(None, 20)
+    # Render chữ ra một surface
+    text_surface_1 = font_20.render("Press [ UP, DOWN, LEFT, RIGHT] on your Keyboard to move", True, White)
+    # Render
+    text_rect_1 = text_surface_1.get_rect(center=(Width // 2, Height - 20))
+    # vẽ lên màn hình 
+    Screen.blit(text_surface_1, text_rect_1)
+
 # Hàm hiển thị dòng chữ Game Over
 def draw_game_over():
     # Khởi tạo font (None = dùng font mặc định, 80 là cỡ chữ)
     font = pygame.font.Font(None, 80)
-
+    # Khởi tạo font (None, 40)
+    font_40 = pygame.font.Font(None, 40)
     # Render chữ ra một surface
-    text_surface = font.render("GAME OVER", True, Red)
-
-    # Lấy vị trí để căn giữa
-    text_rect = text_surface.get_rect(center=(Width // 2, Height // 2))
-
+    text_surface_1 = font.render("GAME OVER", True, White)
+    text_surface_2 = font_40.render("Press SPACE to restart", True, White)
+    # Render
+    text_rect_1 = text_surface_1.get_rect(center=(Width // 2, Height // 2 - 200))
+    text_rect_2 = text_surface_2.get_rect(center=(Width // 2, Height // 2))
     # Vẽ lên màn hình
-    Screen.blit(text_surface, text_rect)
+    Screen.blit(text_surface_1, text_rect_1)
+    Screen.blit(text_surface_2, text_rect_2)
 
 # Hàm vẽ bản đồ
 def draw_map(Cell_Width=Cell_Width, Cell_Height=Cell_Height, Flicker=Flicker):
@@ -362,8 +375,8 @@ def Test_DFS():
 # # # Biến cho Orange ----------------------------------------------------------------------------
 global orange_x, orange_y
 # Vị trí ban đầu của Orange
-orange_x = 420
-orange_y = 288
+orange_x = 0
+orange_y = 0
 
 # Vẽ Orange
 def draw_orange(Cell_Width, Cell_Height):
@@ -436,6 +449,7 @@ while run:
         draw_game_over()
     else:
         draw_map()
+        draw_instructions()
         # Vẽ Pinky
         # Test_DFS()
         pinky_dfs(Cell_Width, Cell_Height)
@@ -497,8 +511,6 @@ while run:
                 new_direction_command = (0, 0)
                 direction_type = 0
 
-
-    
     # pygame.time.delay(100)  # Delay để dễ dàng xem chuyển động
     pygame.display.flip()   # Tải lại hiệu ứng mới
 
