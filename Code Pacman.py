@@ -369,18 +369,19 @@ def draw_blue(blue_x, blue_y, Cell_Width, Cell_Height):
         pygame.draw.circle(Screen, Blue, blue_x, blue_y, 4)
 
 #Vị trí ban đầu của Blue
-blue_x = 390 + 30
+blue_x = 390 + 30 * 3
 blue_y = 360 
 #bfs
 global list_duongdi, blue_nowDirections, i, j, visited, x_temp, y_temp
 list_duongdi = []
-blue_nowDirections = (0, 0)
-list_duongdi.append([((0, - 2), (blue_x, 288))])
+blue_nowDirections = (0, -2)
+list_duongdi.append([((-2, 0), (450, 360))])  # tạo list 0
+list_duongdi[0].append(((0, -2), (450, 288)))  # thêm vào list 0
 i = 0
 j = i 
 visited = []
 visited.append((blue_x, blue_y))
-x_temp = 420
+x_temp = 450
 y_temp = 288
 
 def bfs(Cell_Width, Cell_Height):
@@ -389,6 +390,7 @@ def bfs(Cell_Width, Cell_Height):
 
 
     while(x_temp != pacman_x or y_temp != pacman_y):
+
         blue_nowDirections, x_temp, y_temp = list_duongdi[i][-1][0], list_duongdi[i][-1][1][0], list_duongdi[i][-1][1][1]
         opposite = tuple(-d for d in blue_nowDirections)
         if(Road[y_temp // Cell_Height][x_temp // Cell_Width] >= 1
@@ -461,66 +463,56 @@ def bfs(Cell_Width, Cell_Height):
  
 # inky bfs
 global k 
-k = 1
-def inky_bfs(Cell_Width, Cell_Height, list_duongdi):
+k = 0
+def blue_bfs(Cell_Width, Cell_Height, list_duongdi):
     global blue_x, blue_y
-    blue_nowDirections = (0, 0)
     
     draw_blue(blue_x, blue_y, Cell_Width, Cell_Height)
-
-    while((blue_x >= 360 and blue_x <= 510) and (blue_y > 288 and blue_y <= 384)):
-        # Trạng thái ban đầu chưa có hướng đi
-        if(blue_nowDirections == (0, 0)):
-            blue_nowDirections = Up
-            if((blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (pinky_x, pinky_y)
-                        and (blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (orange_x, orange_y)
-                        and (blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (red_x, red_y)):
-                # print("Hello world")
-                blue_x += blue_nowDirections[0]
-                blue_y += blue_nowDirections[1]
-        # Đang ở trong lồng, đi ra ngoài
-        else:
-            if(((blue_x, blue_y) == (420, 384)) or ((blue_x, blue_y) == (420, 360)) or ((blue_x, blue_y) == (420, 336)) 
-                    or ((blue_x, blue_y) == (450, 384)) or ((blue_x, blue_y) == (450, 360)) or ((blue_x, blue_y) == (450, 336))
-                    or ((blue_x, blue_y) == (420, 312)) or ((blue_x, blue_y) == (450, 312))):
-                # print("blue_x: ", blue_x, "blue_y: ", blue_y)
-                blue_nowDirections = Up
-                if((blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (pinky_x, pinky_y)
-                        and (blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (orange_x, orange_y)
-                        and (blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (red_x, red_y)):
-                    blue_x += blue_nowDirections[0]
-                    blue_y += blue_nowDirections[1]
-                    # print("blue_x: ", blue_x, "blue_y: ", blue_y)
-            else:
-                if((blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (pinky_x, pinky_y)
-                        and (blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (orange_x, orange_y)
-                        and (blue_x + blue_nowDirections[0], blue_y + blue_nowDirections[1]) != (red_x, red_y)):
-                    blue_x += blue_nowDirections[0]
-                    blue_y += blue_nowDirections[1]
-
 
     #bfs 
     global j  
     global k
     if(k <= len(list_duongdi[j]) - 1 ):
 
-
         blue_nowDirections1 = list_duongdi[j][k]
 
-        if (blue_x, blue_y) == (0, 360) and blue_nowDirections1[0] == (-2, 0):
+
+        if (
+            (blue_x, blue_y) == (0, 360) 
+            and blue_nowDirections1[0] == (-2, 0)
+            and (pinky_x // Cell_Width, pinky_y // Cell_Height) != (870, 360)
+            and (orange_x // Cell_Width, orange_y // Cell_Height) != (870, 360)
+            and (red_x // Cell_Width, red_y // Cell_Height) != (870, 360)
+        ):
             blue_x = 870
             blue_y = 360
             k += 1
-        elif(blue_x, blue_y) == (870, 360) and blue_nowDirections1[0] == (2, 0):
+
+        elif (
+            (blue_x, blue_y) == (870, 360) 
+            and blue_nowDirections1[0] == (2, 0)
+            and (pinky_x // Cell_Width, pinky_y // Cell_Height) != (0, 360)
+            and (orange_x // Cell_Width, orange_y // Cell_Height) != (0, 360)
+            and (red_x // Cell_Width, red_y // Cell_Height) != (0, 360)
+        ):
             blue_x = 0
             blue_y = 360
             k += 1
-        else:
+
+        elif (
+            (blue_x + blue_nowDirections1[0][0]) // Cell_Width, (blue_y + blue_nowDirections1[0][1]) // Cell_Height
+        ) != (pinky_x // Cell_Width, pinky_y // Cell_Height) and (
+            (blue_x + blue_nowDirections1[0][0]) // Cell_Width, (blue_y + blue_nowDirections1[0][1]) // Cell_Height
+        ) != (orange_x // Cell_Width, orange_y // Cell_Height) and (
+            (blue_x + blue_nowDirections1[0][0]) // Cell_Width, (blue_y + blue_nowDirections1[0][1]) // Cell_Height
+        ) != (red_x // Cell_Width, red_y // Cell_Height):
+            
             blue_x += blue_nowDirections1[0][0]
             blue_y += blue_nowDirections1[0][1]
 
-            if( (blue_x, blue_y) == (list_duongdi[j][k][1][0], list_duongdi[j][k][1][1])):
+            if (blue_x, blue_y) == (list_duongdi[j][k][1][0], list_duongdi[j][k][1][1]):
                 k += 1
+
     
 
 
@@ -528,7 +520,7 @@ def inky_bfs(Cell_Width, Cell_Height, list_duongdi):
 # # # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
 global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
-pacman_x = 660 + 5 * 30 - 25 * 30
+pacman_x = 660 + 5 * 30 
 pacman_y = 360 + 24 * 15
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
@@ -590,14 +582,14 @@ while run:
         pinky_dfs(Cell_Width, Cell_Height)
 
         
-
-        # #Vẽ Inky
-        inky_bfs(Cell_Width, Cell_Height, list_duongdi)
-        # Vẽ Pacman
-        draw_Pacman(Cell_Width, Cell_Height)
         if(only1 == 0):
             bfs(Cell_Width, Cell_Height)
             only1 = 1
+        # #Vẽ Blue
+        blue_bfs(Cell_Width, Cell_Height, list_duongdi)
+        # Vẽ Pacman
+        draw_Pacman(Cell_Width, Cell_Height)
+
 
         # if(old_pacman_post != (pacman_x, pacman_y)):
         #     pacman_x = pacman_x // Cell_Width
