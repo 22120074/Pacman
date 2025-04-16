@@ -640,7 +640,7 @@ while run:
                 check_road = False          
                 orange_x = 450 
                 orange_y = 360
-                orange_directions = (0, 0)
+                orange_directions = Up
                 orange_path.clear()
                 orange_target_pos = None 
                 last_path_calc_time = 0 
