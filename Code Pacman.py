@@ -7,6 +7,9 @@ import math
 import random
 import heapq # Import heapq for priority queue (used by UCS)
 import time # To potentially limit path recalculation frequency
+import tracemalloc
+
+tracemalloc.start()
 
 pygame.init()
 
@@ -161,7 +164,7 @@ red_x = 0
 red_y = 0
 # # # Biến cho Pinky ----------------------------------------------------------------------------
 global pinky_x, pinky_y, nowDirections, shuffled_Directions, visited_pink_Stack, chosen_direction
-global road_Stack, pinky_state, check_road, gate_state
+global road_Stack, pinky_state, check_road, gate_state, expanded_nodes
 # Vị trí ban đầu của Pinky
 # pinky_x = 420 # Đây là trường hợp Pinky ở ngoài lồng
 # pinky_y = 288
@@ -187,6 +190,7 @@ road_Stack = []             # .append() để thêm, .pop() để xóa
 pinky_state = 0             # 0: bình thường, 1: back tracking
 gate_state = 0              # 0: chưa qua cổng, 1: đã qua cổng
 check_road = False          # Kiểm tra ngã rẽ khi đang back-tracking
+expanded_nodes = 0
 
 # Vẽ Pinky
 def draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height):
@@ -198,7 +202,7 @@ def draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height):
 # Pinky - DFS
 def pinky_dfs(Cell_Width, Cell_Height):
     global pinky_x, pinky_y, nowDirections, shuffled_Directions, visited_pink_Stack
-    global road_Stack, pinky_state, check_road, chosen_direction, gate_state
+    global road_Stack, pinky_state, check_road, chosen_direction, gate_state, expanded_nodes
     # Nếu đang ở trong lồng, ta đi ra khỏi lồng rồi bắt Pacman
     if((pinky_x >= 360 and pinky_x <= 510) and (pinky_y > 288 and pinky_y <= 384)):
         # Trạng thái ban đầu chưa có hướng đi
@@ -270,10 +274,8 @@ def pinky_dfs(Cell_Width, Cell_Height):
                 random.shuffle(shuffled_Directions)          
                 # Duyệt qua tất cả các hướng theo thứ tự ngẫu nhiên   
                 for name, direction in shuffled_Directions:
-                    opposite = tuple(-d for d in direction)     
                     if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2 
                             and (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
-                            and nowDirections != opposite
                             and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (blue_x, blue_y)
                             and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (orange_x, orange_y)
                             and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) != (red_x, red_y)):
@@ -295,6 +297,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
             if(Road[pinky_y // Cell_Height][pinky_x // Cell_Width] >= 2
                     and (pinky_x // Cell_Width) == (pinky_x / Cell_Width) 
                     and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)):
+                expanded_nodes += 1
                 # Xáo trộn hướng đi cho DFS duyệt ngẫu nhiên
                 random.shuffle(shuffled_Directions)          
                 # Duyệt qua tất cả các hướng theo thứ tự ngẫu nhiên   
@@ -536,29 +539,78 @@ def draw_Pacman(Cell_Width, Cell_Height):
     else:
         pygame.draw.circle(Screen, Yellow, (pacman_x, pacman_y), 4)
 
+# Hàm để tính thời gian chạy và dung lượng bộ nhó sử dụng
+def Calculate(target, Catched):
+    global orange_x, orange_y, pinky_x, pinky_y, red_x, red_y, blue_x, blue_y, expanded_nodes
+    if(target == 'Pink'):
+        orange_x = 0
+        orange_y = 0
+        red_x = 0
+        red_y = 0
+        blue_x = 0
+        blue_y = 0
+    elif(target == 'Orange'):
+        pinky_x = 0
+        pinky_y = 0
+        red_x = 0
+        red_y = 0
+        blue_x = 0
+        blue_y = 0
+    elif(target == 'Red'):
+        orange_x = 0
+        orange_y = 0
+        pinky_x = 0
+        pinky_y = 0
+        blue_x = 0
+        blue_y = 0
+    elif(target == 'Blue'):
+        orange_x = 0
+        orange_y = 0
+        pinky_x = 0
+        pinky_y = 0
+        red_x = 0
+        red_y = 0
+    if(Catched == True):
+        end = time.time()
+        print(f"Thời gian chạy: {end - start:.4f} giây")
+        current, peak = tracemalloc.get_traced_memory()
+        print(f"[Tracemalloc] Đang dùng: {current/1024**2:.2f} MB, Đỉnh: {peak/1024**2:.2f} MB")
+        print(f"Số lượng ô đã đi qua: {expanded_nodes}")
+        return False
+
 run = True
 Catched = False
+start = time.time()
 while run:
     Timer.tick(FPS)
     # Vẽ bản đồ
     Screen.fill((0, 0, 0))  # Vẽ lại nền đen
+
+    run = Calculate('Pink', Catched)
+
     if Catched:
         draw_game_over()
     else:
         draw_map()
         draw_instructions()
+
         # Vẽ Pinky
         pinky_dfs(Cell_Width, Cell_Height)
+        # draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height)
+
         # Vẽ Orange
-        update_orange_movement()
-        draw_orange(orange_x, orange_y, Cell_Width, Cell_Height)    
+        # update_orange_movement()
+        # draw_orange(orange_x, orange_y, Cell_Width, Cell_Height)    
+
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
             Catched = True
         elif(pacman_x == orange_x and pacman_y == orange_y):
             Catched = True
+
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
+
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
             Catched = True
@@ -617,3 +669,4 @@ while run:
     pygame.display.flip()   # Tải lại hiệu ứng mới
 
 pygame.quit()
+tracemalloc.stop()
