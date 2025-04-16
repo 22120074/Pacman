@@ -7,6 +7,8 @@ from Board import road
 import pygame
 import math
 import random
+import heapq # Import heapq for priority queue (used by UCS)
+import time # To potentially limit path recalculation frequency
 
 pygame.init()
 
@@ -28,10 +30,12 @@ Right = (Speed, 0)
 # Kích thước ô
 Cell_Height = ((Height - 50) // 32) # 24
 Cell_Width = (Width // 30)          # 30
+Num_Rows = len(Level)
+Num_Cols = len(Level[0])
 
 # Load ảnh
-pinky_image = pygame.image.load("Pinky.png")  # Đường dẫn đến ảnh Pinky
-pinky_image = pygame.transform.scale(pinky_image, (Cell_Width, Cell_Height))  # Resize ảnh
+orange_image = pygame.image.load("Orange.png")  # Đường dẫn đến ảnh 
+orange_image = pygame.transform.scale(orange_image, (Cell_Width, Cell_Height))  # Resize ảnh
 pacman_image = pygame.image.load("Pacman.jpg")  # Đường dẫn đến ảnh Pacman
 pacman_image = pygame.transform.scale(pacman_image, (Cell_Width, Cell_Height))  # Resize ảnh
 
@@ -52,21 +56,13 @@ Yellow = (255, 255, 0)
 Blue = (0, 0, 255)
 Red = (255, 0, 0)
 
-# Hàm hiển thị dòng chữ Game Over
+# --- Helper Functions ---
 def draw_game_over():
-    # Khởi tạo font (None = dùng font mặc định, 80 là cỡ chữ)
     font = pygame.font.Font(None, 80)
-
-    # Render chữ ra một surface
     text_surface = font.render("GAME OVER", True, Red)
-
-    # Lấy vị trí để căn giữa
     text_rect = text_surface.get_rect(center=(Width // 2, Height // 2))
-
-    # Vẽ lên màn hình
     Screen.blit(text_surface, text_rect)
 
-# Hàm vẽ bản đồ
 def draw_map(Cell_Width=Cell_Width, Cell_Height=Cell_Height, Flicker=Flicker):
     for i in range(len(Level)):
         for j in range(len(Level[i])):
@@ -79,212 +75,231 @@ def draw_map(Cell_Width=Cell_Width, Cell_Height=Cell_Height, Flicker=Flicker):
             # Đường thẳng dọc
             if Level[i][j] == 3:
                 pygame.draw.line(
-                    Screen, Blue, 
+                    Screen, Blue,
                     (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height),
-                    (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + Cell_Height), 
+                    (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + Cell_Height),
                     3
                 )
             # Đường thẳng ngang
             if Level[i][j] == 4:
                 pygame.draw.line(
-                    Screen, Blue, 
+                    Screen, Blue,
                     (j * Cell_Width, i * Cell_Height + (0.5 * Cell_Height)),
-                    (j * Cell_Width + Cell_Width, i * Cell_Height + (0.5 * Cell_Height)), 
+                    (j * Cell_Width + Cell_Width, i * Cell_Height + (0.5 * Cell_Height)),
                     3
                 )
             # Góc phải trên
             if Level[i][j] == 5:
                 pygame.draw.arc(
-                    Screen, Blue, 
+                    Screen, Blue,
                     [(j * Cell_Width - (Cell_Width * 0.4)) - 2, (i * Cell_Height + (0.5 * Cell_Height)), Cell_Width, Cell_Height],
-                    0, 
-                    PI / 2, 
+                    0,
+                    PI / 2,
                     3
                 )
             # Góc trái trên
             if Level[i][j] == 6:
                 pygame.draw.arc(
                     Screen, Blue,
-                    [(j * Cell_Width + (Cell_Width * 0.5)), (i * Cell_Height + (0.5 * Cell_Height)), Cell_Width, Cell_Height], 
-                    PI / 2, 
-                    PI, 
+                    [(j * Cell_Width + (Cell_Width * 0.5)), (i * Cell_Height + (0.5 * Cell_Height)), Cell_Width, Cell_Height],
+                    PI / 2,
+                    PI,
                     3
                 )
             # Góc trái dưới
             if Level[i][j] == 7:
                 pygame.draw.arc(
-                    Screen, Blue, 
-                    [(j * Cell_Width + (Cell_Width * 0.5)), (i * Cell_Height - (0.4 * Cell_Height)), Cell_Width, Cell_Height], 
+                    Screen, Blue,
+                    [(j * Cell_Width + (Cell_Width * 0.5)), (i * Cell_Height - (0.4 * Cell_Height)), Cell_Width, Cell_Height],
                     PI,
-                    3 * PI / 2, 
+                    3 * PI / 2,
                     3
                 )
             # Góc phải dưới
             if Level[i][j] == 8:
                 pygame.draw.arc(
                     Screen, Blue,
-                    [(j * Cell_Width - (Cell_Width * 0.4)) - 2, (i * Cell_Height - (0.4 * Cell_Height)), Cell_Width, Cell_Height], 
+                    [(j * Cell_Width - (Cell_Width * 0.4)) - 2, (i * Cell_Height - (0.4 * Cell_Height)), Cell_Width, Cell_Height],
                     3 * PI / 2,
-                    2 * PI, 
+                    2 * PI,
                     3
                 )
             # Cổng ghost
             if Level[i][j] == 9:
                 pygame.draw.line(
-                    Screen, 'white', 
+                    Screen, 'white',
                     (j * Cell_Width, i * Cell_Height + (0.5 * Cell_Height)),
-                    (j * Cell_Width + Cell_Width, i * Cell_Height + (0.5 * Cell_Height)), 
+                    (j * Cell_Width + Cell_Width, i * Cell_Height + (0.5 * Cell_Height)),
                     3
                 )
 
-# Hàm vẽ đường đi để kiểm tra các ngã rẽ và đường đi đúng số chưa trong Road 
-def draw_road(Cell_Width=Cell_Width, Cell_Height=Cell_Height):
-    for i in range(len(Road)):
-        for j in range(len(Road[i])):
-            # Hình tròn
-            if Road[i][j] == 1:
-                pygame.draw.circle(Screen, 'white', (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + (0.5 * Cell_Height)), 4)
-            # Hình tròn to
-            if Road[i][j] == 2 and not Flicker:
-                pygame.draw.circle(Screen, 'white', (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + (0.5 * Cell_Height)), 10)
-            if Road[i][j] == 3:
-                pygame.draw.circle(Screen, 'white', (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + (0.5 * Cell_Height)), 15)
-            if Road[i][j] == 4:
-                pygame.draw.circle(Screen, 'white', (j * Cell_Width + (0.5 * Cell_Width), i * Cell_Height + (0.5 * Cell_Height)), 20)
 
-# Vẽ Pinky
-def draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height):
-    if pinky_image:  
-        Screen.blit(pinky_image, (pinky_x, pinky_y))
-    else:
-        pygame.draw.circle(Screen, Pink, pinky_x, pinky_y, 4)
+orange_x = 420  
+orange_y = 288
+orange_path = [] #
+orange_target_pos = None 
+last_path_calc_time = 0 
 
+# Tìm đường đi bằng UCS
+def find_ucs_path(start_pos, goal_pos):
+    global orange_x, orange_y
+    draw_orange(orange_x,orange_y,Cell_Width, Cell_Height)
+    
+    start_col = start_pos[0] // Cell_Width
+    start_row = start_pos[1] // Cell_Height
+    goal_col = goal_pos[0] // Cell_Width
+    goal_row = goal_pos[1] // Cell_Height
+    start_node = (start_col, start_row)
+    goal_node = (goal_col, goal_row)
 
-# # # Biến cho Pinky ----------------------------------------------------------------------------
-global pinky_x, pinky_y, nowDirections, shuffled_Directions, visited_pink_Stack
-global road_Stack, pinky_state, check_road
-# Vị trí ban đầu của Pinky
-pinky_x = 420
-pinky_y = 288
-# Các hướng đi
-Directions = {
-    "Up": (0, -1 * Speed),
-    "Down": (0, 1 * Speed),
-    "Left": (-1 * Speed, 0),
-    "Right": (1 * Speed, 0)
-}
-# Hướng đi hiện tại của Pinky
-nowDirections = (0, 0)
-# Lấy danh sách hướng
-shuffled_Directions = list(Directions.items())
-# Ngăn xếp lưu các node đã đi qua để duyệt lại
-visited_pink_Stack = set()  # .add() để thêm, .remove() để xóa
-# Ngăn xếp lưu đường đi
-road_Stack = []             # .append() để thêm, .pop() để xóa
-# Trạng thái của Pinky
-pinky_state = 0             # 0: bình thường, 1: back tracking
-check_road = False 
+    
+    
+    queue = [(0, start_node, [])]
+    visited = {start_node} 
 
-# Pinky - DFS
-def pinky_dfs(Cell_Width, Cell_Height):
-    global pinky_x, pinky_y, nowDirections, shuffled_Directions, visited_pink_Stack
-    global road_Stack, pinky_state, check_road
-    # Vẽ Pinky
-    draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height)
-    # Kiểm tra 2 vị trí đặc biệt
-    if (pinky_x, pinky_y) == (0, 360) and nowDirections == Left:
-        pinky_x = 870
-        pinky_y = 360
-    elif (pinky_x, pinky_y) == (870, 360) and nowDirections == Right:
-        pinky_x = 0
-        pinky_y = 360
-    else:
-        # Kiểm tra nếu Pinky đã đi qua ô này chưa
-        if (pinky_x, pinky_y) in visited_pink_Stack:
-            if(Road[pinky_y // Cell_Height][pinky_x // Cell_Width] >= 2 
-               and (pinky_x // Cell_Width) == (pinky_x / Cell_Width) 
-               and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)):
-                # Kiểm tra xong quanh còn đường đi chưa đi không?
-                random.shuffle(shuffled_Directions)          
-                # Duyệt qua tất cả các hướng theo thứ tự ngẫu nhiên   
-                for name, direction in shuffled_Directions:
-                    opposite = tuple(-d for d in direction)     
-                    if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2 
-                    and
-                    (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
-                    and
-                    nowDirections != opposite):
-                        nowDirections = direction
-                        pinky_x += direction[0]
-                        pinky_y += direction[1]
-                        check_road = True
-                        break
-            if not check_road:
-                pinky_state = 1
-        else:
-            # Nếu chưa đi qua, thêm ô vào danh sách đã đi qua
-            visited_pink_Stack.add((pinky_x, pinky_y))
-            # Thêm vào road_Stack để back-up
-            road_Stack.append((pinky_x, pinky_y))
+    while queue:
+        cost, current_node, path = heapq.heappop(queue)
 
-
-        # Nếu chưa có hướng đi nhất định, chọn ngẫu nhiên một hướng đi
-        if(nowDirections == (0, 0)):
-            # Xáo trộn hướng đi cho DFS duyệt ngẫu nhiên
-            random.shuffle(shuffled_Directions)          
-            # Duyệt qua tất cả các hướng theo thứ tự ngẫu nhiên   
-            for name, direction in shuffled_Directions:     
-                if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2):
-                    nowDirections = direction
-                    pinky_x += direction[0]
-                    pinky_y += direction[1]
-                    break
-
-        if(pinky_state == 0):
-            # Nếu Pinky đi đến ô Road có số >= 2
-            if(Road[pinky_y // Cell_Height][pinky_x // Cell_Width] >= 2
-                    and (pinky_x // Cell_Width) == (pinky_x / Cell_Width) 
-                    and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)):
-                # Xáo trộn hướng đi cho DFS duyệt ngẫu nhiên
-                random.shuffle(shuffled_Directions)          
-                # Duyệt qua tất cả các hướng theo thứ tự ngẫu nhiên   
-                for name, direction in shuffled_Directions:    
-                    opposite = tuple(-d for d in direction)     
-                    if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2
-                    and
-                    (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
-                    and
-                    nowDirections != opposite):
-                        nowDirections = direction
-                        pinky_x += direction[0]
-                        pinky_y += direction[1]
-                        break
-            # Nếu Pinky đi đến ô Road có số = 1
-            elif(Road[(pinky_y) // Cell_Height][pinky_x // Cell_Width] == 1
-                    and (pinky_x // Cell_Width) == (pinky_x / Cell_Width)
-                    and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)):
-                pinky_x += nowDirections[0]
-                pinky_y += nowDirections[1]
+        # Kiểm tra xem đã đến đích chưa
+        if current_node == goal_node:
+            # Chuyển đổi tọa độ lưới trở lại tọa độ pixel
+            pixel_path = []
+            full_path = path + [current_node] 
+            for node in full_path:
+                 
+                pixel_path.append((node[0] * Cell_Width, node[1] * Cell_Height))
+            
+            if pixel_path:
+                 return pixel_path[1:]
             else:
-                pinky_x += nowDirections[0]
-                pinky_y += nowDirections[1]
-        elif(pinky_state == 1):
-            if len(road_Stack) > 0:
-                pinky_x, pinky_y = road_Stack.pop()
+                 return []
 
-        pinky_state = 0
-        check_road = False 
+        col, row = current_node
+       
+        for dc, dr in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+            next_col, next_row = col + dc, row + dr
+
+            # Đường hầm
+            if next_col < 0 and next_row == 14: # 
+                 next_col = Num_Cols - 1
+            elif next_col >= Num_Cols and next_row == 14: 
+                 next_col = 0
+
+        
+            if 0 <= next_row < Num_Rows and 0 <= next_col < Num_Cols:
+                 if Level[next_row][next_col] <= 2 or Level[next_row][next_col] == 9:
+                     neighbor_node = (next_col, next_row)
+                     if neighbor_node not in visited:
+                         visited.add(neighbor_node)
+                         new_cost = cost + 1
+                         new_path = path + [current_node]
+                         heapq.heappush(queue, (new_cost, neighbor_node, new_path))
+
+   
+    return [] 
+
+# Cập nhật vị trí của Orange
+def update_orange_movement():
+    global orange_x, orange_y, orange_path, orange_target_pos, last_path_calc_time
+
+    current_time = time.time()
+    recalculate_path = False
+
+    
+    if not orange_path and orange_target_pos is None:
+        recalculate_path = True
+        
+
+    
+    if current_time - last_path_calc_time < 0.5 and not recalculate_path:
+         pass 
+    elif recalculate_path or current_time - last_path_calc_time >= 0.5: 
+         
+        
+         pacman_current_pixel_pos = (pacman_x, pacman_y)
+         orange_current_pixel_pos = (orange_x, orange_y)
+
+        # Kiểm tra xem Pacman có trong tầm nhìn của Orange không
+         if orange_current_pixel_pos != pacman_current_pixel_pos:
+             
+             new_path = find_ucs_path(orange_current_pixel_pos, pacman_current_pixel_pos)
+             if new_path: 
+                 orange_path = new_path
+                 orange_target_pos = orange_path.pop(0) 
+                
+             else:
+                 
+                 orange_path = []
+                 orange_target_pos = None 
+             last_path_calc_time = current_time 
+         else:
+              
+              orange_path = []
+              orange_target_pos = None
+
+
+    # Di chuyển đến Pacman
+    if orange_target_pos:
+        target_x, target_y = orange_target_pos
+
+        
+        move_x, move_y = 0, 0
+        if orange_x < target_x:
+            move_x = Speed
+        elif orange_x > target_x:
+            move_x = -Speed
+
+        if orange_y < target_y:
+            move_y = Speed
+        elif orange_y > target_y:
+            move_y = -Speed
+
+        # Di chuyển Orange
+        orange_x += move_x
+        orange_y += move_y
+
+        # Kiểm tra xem Orange đã đến vị trí mục tiêu chưa
+        
+        reached_x = (move_x > 0 and orange_x >= target_x) or \
+                    (move_x < 0 and orange_x <= target_x) or \
+                    (move_x == 0)
+        reached_y = (move_y > 0 and orange_y >= target_y) or \
+                    (move_y < 0 and orange_y <= target_y) or \
+                    (move_y == 0)
+
+        if reached_x and reached_y:
+           
+            orange_x = target_x
+            orange_y = target_y
+            
+           
+            if orange_path:
+                orange_target_pos = orange_path.pop(0)
+               
+            else:
+                
+                orange_target_pos = None # End of path
+
+
+# Vẽ orange 
+def draw_orange(orange_x, orange_y, Cell_Width, Cell_Height):
+    if orange_image:
+        Screen.blit(orange_image, (orange_x, orange_y))
+    else:
+        pygame.draw.circle(Screen, Pink, orange_x, orange_y, 4)
+
 
 # # # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
-global pacman_x, pacman_y, direction_command
-pacman_x = 420
+global pacman_x, pacman_y, direction_command, new_direction_command
+pacman_x = 210
 pacman_y = 576
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
 new_direction_command = (0, 0)
-direction_type = 0
-# Vẽ Pacman
+direction_type = 0 
+
+# Vẽ Pacman 
 def draw_Pacman(Cell_Width, Cell_Height):
     global pacman_x, pacman_y, direction_command
     opposite = tuple(-d for d in direction_command)
@@ -331,8 +346,9 @@ while run:
     Screen.fill((0, 0, 0))  # Vẽ lại nền đen
     if not Catched:
         draw_map()
-        # Vẽ Pinky
-        pinky_dfs(Cell_Width, Cell_Height)
+        # Vẽ orange
+        update_orange_movement() 
+        draw_orange(orange_x, orange_y, Cell_Width, Cell_Height)    
 
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
@@ -344,28 +360,23 @@ while run:
             run = False
         # Kiểm tra nhấn phím
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RIGHT:
-                direction_type = 0
-            if event.key == pygame.K_LEFT:
-                direction_type = 1
-            if event.key == pygame.K_UP:
-                direction_type = 2
-            if event.key == pygame.K_DOWN:
-                direction_type = 3
-        if event.type == pygame.KEYUP:
-            if event.key == pygame.K_RIGHT and direction_type == 0:
-                new_direction_command = Right   
-            if event.key == pygame.K_LEFT and direction_type == 1:
-                new_direction_command = Left
-            if event.key == pygame.K_UP and direction_type == 2:
-                new_direction_command = Up
-            if event.key == pygame.K_DOWN and direction_type == 3:
-                new_direction_command = Down
+            if event.key == pygame.K_RIGHT: direction_type = 0
+            elif event.key == pygame.K_LEFT: direction_type = 1
+            elif event.key == pygame.K_UP: direction_type = 2
+            elif event.key == pygame.K_DOWN: direction_type = 3
+           
 
-    if(pacman_x == pinky_x and pacman_y == pinky_y):
+        if event.type == pygame.KEYUP:
+            
+            if event.key == pygame.K_RIGHT and direction_type == 0: new_direction_command = Right
+            elif event.key == pygame.K_LEFT and direction_type == 1: new_direction_command = Left
+            elif event.key == pygame.K_UP and direction_type == 2: new_direction_command = Up
+            elif event.key == pygame.K_DOWN and direction_type == 3: new_direction_command = Down
+
+    if(pacman_x == orange_x and pacman_y == orange_y):
         Catched = True
     
-    # pygame.time.delay(100)  # Delay để dễ dàng xem chuyển động
+    
     pygame.display.flip()   # Tải lại hiệu ứng mới
 
 pygame.quit()
