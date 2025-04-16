@@ -211,6 +211,10 @@ def pinky_dfs(Cell_Width, Cell_Height):
                     and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                 pinky_x += nowDirections[0]
                 pinky_y += nowDirections[1]
+                print(2)
+            else: 
+                nowDirections = (0, 0)
+                print(1)
         # Đang ở trong lồng, đi ra ngoài
         else:
             if(((pinky_x, pinky_y) == (420, 360)) or ((pinky_x, pinky_y) == (420, 336)) or ((pinky_x, pinky_y) == (420, 384)) 
@@ -221,6 +225,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
                         and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
+
             else:
                 if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
                         and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
@@ -425,24 +430,19 @@ def draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height):
 # Tốc độ Blinky mỗi frame (đi 2 pixel mỗi frame)
 BLINKY_SPEED = 1
 blinky_path = []
-
+global nowDirectionsBlinky
+nowDirectionsBlinky = (0, 0)
 def blinky_astar(Cell_Width, Cell_Height):
-    global blinky_x, blinky_y, nowDirections, gate_state, pacman_x, pacman_y
+    global blinky_x, blinky_y, nowDirectionsBlinky, gate_state, pacman_x, pacman_y
 
     blinky_pos = (blinky_x, blinky_y)
     pacman_pos = (pacman_x, pacman_y)
 
     if (blinky_x >= 360 and blinky_x <= 510) and (blinky_y > 288 and blinky_y <= 384):
         # Trong lồng, đi lên
-        nowDirections = Up
-        blinky_x += nowDirections[0]
-        blinky_y += nowDirections[1]
-    elif ((blinky_x, blinky_y) == (420, 288) or (blinky_x, blinky_y) == (450, 288)) and gate_state == 0:
-        # Vừa ra khỏi cổng
-        gate_state = 1
-        nowDirections = Directions[random.choice(["Left", "Right"])]
-        blinky_x += nowDirections[0]
-        blinky_y += nowDirections[1]
+        nowDirectionsBlinky = Up
+        blinky_x += nowDirectionsBlinky[0]
+        blinky_y += nowDirectionsBlinky[1]
     else:
         # Dùng A* để tìm đường
         path = astar_path(blinky_pos, pacman_pos, Cell_Width, Cell_Height)
@@ -455,7 +455,7 @@ def blinky_astar(Cell_Width, Cell_Height):
 
             if distance != 0:
                 move_x = int(BLINKY_SPEED * dx // distance)
-                move_y = int(BLINKY_SPEED * dy // distance)
+                move_y = int(BLINKY_SPEED * dy //  distance)
                 blinky_x += move_x
                 blinky_y += move_y
 
@@ -472,7 +472,7 @@ def Test_DFS():
 # # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
 global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
-pacman_x = 24 * 30
+pacman_x = 12 * 30
 pacman_y = 30 * 24
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
@@ -552,7 +552,7 @@ while run:
         draw_map()
         # Vẽ Pinky
         # Test_DFS()
-        # pinky_dfs(Cell_Width, Cell_Height)
+        pinky_dfs(Cell_Width, Cell_Height)
         blinky_astar(Cell_Width, Cell_Height)
         # # Vẽ Orange
         # draw_orange(Cell_Width, Cell_Height)
