@@ -209,6 +209,8 @@ def pinky_dfs(Cell_Width, Cell_Height):
                         and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
                 pinky_x += nowDirections[0]
                 pinky_y += nowDirections[1]
+            else:
+                nowDirections = (0, 0)
         # Đang ở trong lồng, đi ra ngoài
         else:
             if(((pinky_x, pinky_y) == (420, 360)) or ((pinky_x, pinky_y) == (420, 336)) or ((pinky_x, pinky_y) == (420, 384)) 
@@ -298,6 +300,10 @@ def pinky_dfs(Cell_Width, Cell_Height):
                 # Duyệt qua tất cả các hướng theo thứ tự ngẫu nhiên   
                 for name, direction in shuffled_Directions:    
                     opposite = tuple(-d for d in direction)     
+                    if((pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) == (blue_x, blue_y)
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) == (orange_x, orange_y)
+                            and (pinky_x + direction[0] * (30 // Speed), pinky_y + direction[1] * (24 // Speed)) == (red_x, red_y)):
+                        pinky_state = 1
                     if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2
                             and (pinky_x + direction[0], pinky_y + direction[1]) not in visited_pink_Stack 
                             and nowDirections != opposite
@@ -307,24 +313,29 @@ def pinky_dfs(Cell_Width, Cell_Height):
                         nowDirections = direction
                         pinky_x += direction[0]
                         pinky_y += direction[1]
+                        pinky_state = 0
                         break
             # Nếu Pinky đi đến ô Road có số = 1
             elif(Road[(pinky_y) // Cell_Height][pinky_x // Cell_Width] == 1
                     and (pinky_x // Cell_Width) == (pinky_x / Cell_Width)
-                    and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)
-                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blue_x, blue_y)
-                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
-                    and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
-                pinky_x += nowDirections[0]
-                pinky_y += nowDirections[1]
+                    and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)):
+                if((pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) == (blue_x, blue_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) == (orange_x, orange_y)
+                        and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) == (red_x, red_y)):
+                    pinky_state = 1
+                else:
+                    pinky_x += nowDirections[0]
+                    pinky_y += nowDirections[1]
             else:
                 if((pinky_x + nowDirections[0], pinky_y + nowDirections[1]) != (blue_x, blue_y)
                         and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (orange_x, orange_y)
                         and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (red_x, red_y)):
                     pinky_x += nowDirections[0]
                     pinky_y += nowDirections[1]
+                else:
+                    pinky_state = 1
         # Back tracking
-        elif(pinky_state == 1):
+        if(pinky_state == 1):
             if len(road_Stack) > 0:
                 pinky_x, pinky_y = road_Stack.pop()
             if len(road_Stack) == 0:
@@ -603,9 +614,6 @@ while run:
                 new_direction_command = (0, 0)
                 direction_type = 0
 
-
-
-    # pygame.time.delay(100)  # Delay để dễ dàng xem chuyển động
     pygame.display.flip()   # Tải lại hiệu ứng mới
 
 pygame.quit()
