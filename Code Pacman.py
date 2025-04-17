@@ -903,7 +903,7 @@ def draw_orange(orange_x, orange_y, Cell_Width, Cell_Height):
 # Vị trí ban đầu của Pacman
 global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
 pacman_x = 420
-pacman_y = 360
+pacman_y = 576
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
 new_direction_command = (0, 0)
@@ -1008,6 +1008,8 @@ key_to_direction = {
 run = True
 Catched = False
 start = time.time()
+game_started = True
+
 
 # Biến hỗ trợ Blue 
 global old_pacman_post
@@ -1066,7 +1068,7 @@ while run:
                     pinky_y = new_pinky_y
             else:
         # If invalid direction, pick random legal direction if needed
-                 nowDirections = (0, 0)        
+                nowDirections = (0, 0)        
 
         # Move Orange depending on its current direction state
             if orange_directions != (0, 0):
@@ -1186,7 +1188,7 @@ while run:
                 nowDirectionsBlinky = (0, 0)
                 # Pacman
                 pacman_x = 420 
-                pacman_y = 360
+                pacman_y = 576
                 direction_command = (0, 0)
                 new_direction_command = (0, 0)
                 direction_type = -1
