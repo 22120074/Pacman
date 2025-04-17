@@ -638,17 +638,79 @@ def blinky_astar(Cell_Width, Cell_Height):
 
 # # # Biến cho Orange -----------------------------------------------------------------------------------------------------------------
 # Vị trí ban đầu của Orange
-orange_x = 420  
-orange_y = 288
-orange_path = [] #
-orange_target_pos = None 
-last_path_calc_time = 0 
+# Biến cho Orange
+global orange_x, orange_y, orange_path, orange_target_pos, last_path_calc_time, orange_gate_state, orange_directions
+global orange_stuck_counter, orange_delay_frames
+orange_x = 450
+orange_y = 360
+orange_path = []
+orange_target_pos = None
+last_path_calc_time = 0
+orange_gate_state = 0
+orange_directions = Up
+orange_stuck_counter = 0
+orange_delay_frames = 180  # 3 giây delay tại 60 FPS
+
+# Biến kiểm tra game đã bắt đầu hay chưa
+global game_started
+game_started = False
+
+# Hàm lấy hướng ngược lại
+def get_opposite_direction(direction):
+    opposite = tuple(-d for d in direction)
+    for name, dir in Directions.items():
+        if dir == opposite:
+            return dir
+    return (0, 0)
+
+# Hàm kiểm tra va chạm tường
+def check_collision(next_x, next_y, exclude_self=True):
+    global pinky_x, pinky_y, pacman_x, pacman_y, blue_x, blue_y, red_x, red_y, orange_x, orange_y
+    # Kiểm tra xem vị trí tiếp theo có phải là cổng không
+    next_row = int(next_y // Cell_Height)
+    next_col = int(next_x // Cell_Width)
+    is_gate = (0 <= next_row < Num_Rows and 0 <= next_col < Num_Cols and Level[next_row][next_col] == 9)
+    
+    # Nếu vị trí tiếp theo là cổng, bỏ qua kiểm tra va chạm với các nhân vật khác
+    if is_gate:
+        return False
+    
+    other_positions = [
+        (pinky_x, pinky_y),
+        (pacman_x, pacman_y),
+        (blue_x, blue_y),
+        (red_x, red_y),
+        (orange_x, orange_y)
+    ]
+    for pos_x, pos_y in other_positions:
+        if (next_x, next_y) == (pos_x, pos_y):
+            if exclude_self and (next_x, next_y) == (orange_x, orange_y):
+                continue
+            return True
+    return False
+
+# Kiểm tra va chạm ma
+def check_ghost_collision(next_x, next_y, self_x, self_y):
+    global pinky_x, pinky_y, blue_x, blue_y, red_x, red_y, orange_x, orange_y
+    next_tile = (int(next_y // Cell_Height), int(next_x // Cell_Width))
+    self_tile = (int(self_y // Cell_Height), int(self_x // Cell_Width))
+
+    ghost_tiles = [
+        (int(pinky_y // Cell_Height), int(pinky_x // Cell_Width)),
+        (int(blue_y // Cell_Height), int(blue_x // Cell_Width)),
+        (int(red_y // Cell_Height), int(red_x // Cell_Width)),
+        (int(orange_y // Cell_Height), int(orange_x // Cell_Width))
+    ]
+
+    for ghost_tile in ghost_tiles:
+        if ghost_tile == next_tile and next_tile != self_tile:
+            return True
+    return False
+
 
 # Tìm đường đi bằng UCS
 def find_ucs_path(start_pos, goal_pos):
     global orange_x, orange_y
-    draw_orange(orange_x,orange_y,Cell_Width, Cell_Height)
-    
     start_col = start_pos[0] // Cell_Width
     start_row = start_pos[1] // Cell_Height
     goal_col = goal_pos[0] // Cell_Width
@@ -657,108 +719,188 @@ def find_ucs_path(start_pos, goal_pos):
     goal_node = (goal_col, goal_row)
 
     queue = [(0, start_node, [])]
-    visited = {start_node} 
+    visited = {start_node}
 
     while queue:
         cost, current_node, path = heapq.heappop(queue)
-        # Kiểm tra xem đã đến đích chưa
         if current_node == goal_node:
-            # Chuyển đổi tọa độ lưới trở lại tọa độ pixel
             pixel_path = []
-            full_path = path + [current_node] 
+            full_path = path + [current_node]
             for node in full_path:
-                 
                 pixel_path.append((node[0] * Cell_Width, node[1] * Cell_Height))
-            
-            if pixel_path:
-                 return pixel_path[1:]
-            else:
-                 return []
+            return pixel_path[1:] if pixel_path else []
 
         col, row = current_node
-       
         for dc, dr in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
             next_col, next_row = col + dc, row + dr
-            # Đường hầm
-            if next_col < 0 and next_row == 14: # 
-                 next_col = Num_Cols - 1
-            elif next_col >= Num_Cols and next_row == 14: 
-                 next_col = 0
+            if next_col < 0 and next_row == 14:
+                next_col = Num_Cols - 1
+            elif next_col >= Num_Cols and next_row == 14:
+                next_col = 0
 
             if 0 <= next_row < Num_Rows and 0 <= next_col < Num_Cols:
-                 if Level[next_row][next_col] <= 2 or Level[next_row][next_col] == 9:
-                     neighbor_node = (next_col, next_row)
-                     if neighbor_node not in visited:
-                         visited.add(neighbor_node)
-                         new_cost = cost + 1
-                         new_path = path + [current_node]
-                         heapq.heappush(queue, (new_cost, neighbor_node, new_path))
+                if Level[next_row][next_col] <= 2 or Level[next_row][next_col] == 9:
+                    neighbor_node = (next_col, next_row)
+                    if neighbor_node not in visited:
+                        next_pixel_x = next_col * Cell_Width
+                        next_pixel_y = next_row * Cell_Height
+                        if not check_collision(next_pixel_x, next_pixel_y) and not check_ghost_collision(next_pixel_x, next_pixel_y, orange_x, orange_y):
+
+                            visited.add(neighbor_node)
+                            new_cost = cost + 1
+                            new_path = path + [current_node]
+                            heapq.heappush(queue, (new_cost, neighbor_node, new_path))
     return []
 
 # Cập nhật vị trí của Orange
 def update_orange_movement():
-    global orange_x, orange_y, orange_path, orange_target_pos, last_path_calc_time
+    global orange_x, orange_y, orange_path, orange_target_pos, last_path_calc_time, orange_gate_state, orange_directions
+    global orange_stuck_counter, orange_delay_frames
+    # Không di chuyển nếu game chưa bắt đầu
+    if not game_started:
+        return
+
     current_time = time.time()
     recalculate_path = False
 
-    if not orange_path and orange_target_pos is None:
-        recalculate_path = True
-    
-    if current_time - last_path_calc_time < 0.5 and not recalculate_path:
-        pass 
-    elif recalculate_path or current_time - last_path_calc_time >= 0.5: 
-        pacman_current_pixel_pos = (pacman_x, pacman_y)
-        orange_current_pixel_pos = (orange_x, orange_y)
-        # Kiểm tra xem Pacman có trong tầm nhìn của Orange không
-        if orange_current_pixel_pos != pacman_current_pixel_pos:
+    # Trì hoãn Orange để Pinky di chuyển trước
+    if orange_delay_frames > 0:
+        orange_delay_frames -= 1  
+        return
+
+    # Lưu vị trí trước khi di chuyển để kiểm tra xem Orange có bị kẹt không
+    prev_x, prev_y = orange_x, orange_y
+
+    # Nếu Orange đang ở trong lồng
+    if ((orange_x >= 360 and orange_x <= 510) and (orange_y > 288 and orange_y <= 384)):
+        # Trạng thái ban đầu chưa có hướng đi
+        if orange_directions == (0, 0):
+            # Thử hướng Right trước, nếu không được thì thử Left
+            if not check_collision(orange_x + Right[0] * (30 // Speed), orange_y + Right[1] * (24 // Speed)):
+                orange_directions = Right
+            elif not check_collision(orange_x + Left[0] * (30 // Speed), orange_y + Left[1] * (24 // Speed)):
+                orange_directions = Left
+            else:
+                orange_directions = Up  # Nếu cả hai hướng đều bị chặn, thử đi lên
+            if not check_collision(orange_x + orange_directions[0] * (30 // Speed), orange_y + orange_directions[1] * (24 // Speed)):
+                orange_x += orange_directions[0]
+                orange_y += orange_directions[1]
+        # Đang ở trong lồng, đi ra ngoài
+        else:
+            # Nếu ở các vị trí cần đi lên để ra cổng
+            if (((orange_x, orange_y) == (420, 360)) or ((orange_x, orange_y) == (420, 336)) or ((orange_x, orange_y) == (420, 384)) 
+                    or ((orange_x, orange_y) == (450, 360)) or ((orange_x, orange_y) == (450, 336)) or ((orange_x, orange_y) == (450, 384))
+                    or ((orange_x, orange_y) == (420, 312)) or ((orange_x, orange_y) == (450, 312))):
+                orange_directions = Up
+                if not check_collision(orange_x + orange_directions[0] * (30 // Speed), orange_y + orange_directions[1] * (24 // Speed)):
+                    orange_x += orange_directions[0]
+                    orange_y += orange_directions[1]
+            else:
+                if not check_collision(orange_x + orange_directions[0] * (30 // Speed), orange_y + orange_directions[1] * (24 // Speed)):
+                    orange_x += orange_directions[0]
+                    orange_y += orange_directions[1]
+                else:
+                    # Nếu hướng hiện tại bị chặn, thử hướng khác
+                    for direction in [Up, Left, Right]:
+                        if not check_collision(orange_x + direction[0] * (30 // Speed), orange_y + direction[1] * (24 // Speed)):
+                            orange_directions = direction
+                            orange_x += orange_directions[0]
+                            orange_y += orange_directions[1]
+                            break
+    # Sau khi bước qua cổng lồng thì quẹo trái hoặc phải
+    elif (((orange_x, orange_y) == (420, 288) or (orange_x, orange_y) == (450, 288)) and orange_gate_state == 0):
+        chosen_direction = random.choice(["Right", "Left"])
+        orange_directions = Directions[chosen_direction]
+        orange_gate_state = 1
+        if not check_collision(orange_x + orange_directions[0] * (30 // Speed), orange_y + orange_directions[1] * (24 // Speed)):
+            orange_x += orange_directions[0]
+            orange_y += orange_directions[1]
+    # Khi đã thoát lồng, sử dụng UCS để đuổi Pacman
+    else:
+        # Nếu không có đường đi hoặc không có mục tiêu, cần tính lại đường đi
+        if not orange_path and orange_target_pos is None:
+            recalculate_path = True
+        
+        # Tính toán lại đường đi nếu cần hoặc sau mỗi 0.5 giây
+        if current_time - last_path_calc_time < 0.5 and not recalculate_path:
+            pass 
+        elif recalculate_path or current_time - last_path_calc_time >= 0.5: 
+            pacman_current_pixel_pos = (pacman_x, pacman_y)
+            orange_current_pixel_pos = (orange_x, orange_y)
+            # Tính toán lại đường đi bất kể Pacman có di chuyển hay không
             new_path = find_ucs_path(orange_current_pixel_pos, pacman_current_pixel_pos)
             if new_path: 
                 orange_path = new_path
-                orange_target_pos = orange_path.pop(0) 
+                if orange_path:
+                    orange_target_pos = orange_path.pop(0) 
+                else:
+                    orange_target_pos = None
             else:
                 orange_path = []
                 orange_target_pos = None 
             last_path_calc_time = current_time 
-        else:
-            orange_path = []
-            orange_target_pos = None
 
-    # Di chuyển đến Pacman
-    if orange_target_pos:
-        target_x, target_y = orange_target_pos
-        move_x, move_y = 0, 0
-        if orange_x < target_x:
-            move_x = Speed
-        elif orange_x > target_x:
-            move_x = -Speed
-        if orange_y < target_y:
-            move_y = Speed
-        elif orange_y > target_y:
-            move_y = -Speed
-        # Di chuyển Orange
-        orange_x += move_x
-        orange_y += move_y
-        # Kiểm tra xem Orange đã đến vị trí mục tiêu chưa
-        reached_x = (move_x > 0 and orange_x >= target_x) or \
-                    (move_x < 0 and orange_x <= target_x) or \
-                    (move_x == 0)
-        reached_y = (move_y > 0 and orange_y >= target_y) or \
-                    (move_y < 0 and orange_y <= target_y) or \
-                    (move_y == 0)
-        if reached_x and reached_y:
-            orange_x = target_x
-            orange_y = target_y
-            if orange_path:
-                orange_target_pos = orange_path.pop(0)
+        # Di chuyển Orange theo mục tiêu
+        if orange_target_pos:
+            target_x, target_y = orange_target_pos
+            if (orange_x % Cell_Width == 0 and orange_y % Cell_Height == 0):
+                move_x, move_y = 0, 0
+                if orange_x < target_x:
+                    move_x = Speed
+                elif orange_x > target_x:
+                    move_x = -Speed
+                elif orange_y < target_y:
+                    move_y = Speed
+                elif orange_y > target_y:
+                    move_y = -Speed
+
+                next_x = orange_x + move_x
+                next_y = orange_y + move_y
+                if not check_collision(next_x, next_y) and not check_ghost_collision(next_x, next_y, orange_x, orange_y):
+
+                    orange_x = next_x
+                    orange_y = next_y
+                else:
+                    orange_path = []
+                    orange_target_pos = None
+                    return
+
+                if orange_x == target_x and orange_y == target_y:
+                    if orange_path:
+                        orange_target_pos = orange_path.pop(0)
+                    else:
+             # No more path, but we still want Orange to keep chasing Pacman
+                        recalculate_path = True
+                    
             else:
-                orange_target_pos = None # End of path
+                current_direction = (0, 0)
+                if orange_x % Cell_Width != 0:
+                    if orange_x < target_x:
+                        current_direction = (Speed, 0)
+                    elif orange_x > target_x:
+                        current_direction = (-Speed, 0)
+                elif orange_y % Cell_Height != 0:
+                    if orange_y < target_y:
+                        current_direction = (0, Speed)
+                    elif orange_y > target_y:
+                        current_direction = (0, -Speed)
+                
+                next_x = orange_x + current_direction[0]
+                next_y = orange_y + current_direction[1]
+                if not check_collision(next_x, next_y) and not check_ghost_collision(next_x, next_y, orange_x, orange_y):
 
-# Vẽ orange 
+                    orange_x = next_x
+                    orange_y = next_y
+                else:
+                    orange_path = []
+                    orange_target_pos = None
+
+# Vẽ Orange
 def draw_orange(orange_x, orange_y, Cell_Width, Cell_Height):
     if orange_image:
         Screen.blit(orange_image, (orange_x, orange_y))
     else:
-        pygame.draw.circle(Screen, Pink, orange_x, orange_y, 4)
+        pygame.draw.circle(Screen, Orange, orange_x, orange_y, 4)
 
 # # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
@@ -894,16 +1036,72 @@ while run:
 
         # Vẽ Orange
         update_orange_movement()
-        draw_orange(orange_x, orange_y, Cell_Width, Cell_Height)    
+        draw_orange(orange_x, orange_y, Cell_Width, Cell_Height)
+
+        pinky_x = int(pinky_x)
+        pinky_y = int(pinky_y)
+        orange_x = int(orange_x)
+        orange_y = int(orange_y)
+
+        pinky_tile = (pinky_x // Cell_Width, pinky_y // Cell_Height)
+        orange_tile = (orange_x // Cell_Width, orange_y // Cell_Height)
+
+        dx = abs(pinky_tile[0] - orange_tile[0])
+        dy = abs(pinky_tile[1] - orange_tile[1])
+
+        if (dx + dy == 1) and gate_state == 1 and orange_gate_state == 1:
+            prev_pinky_direction = nowDirections
+            nowDirections = get_opposite_direction(nowDirections)
+    
+            # Move Pinky if new direction is safe
+            new_pinky_x = pinky_x + nowDirections[0]
+            new_pinky_y = pinky_y + nowDirections[1]
+
+            # Convert to tile coords
+            tile_col = new_pinky_x // Cell_Width
+            tile_row = new_pinky_y // Cell_Height
+            if (0 <= tile_col < Num_Cols and 0 <= tile_row < Num_Rows and 
+        (Level[tile_row][tile_col] <= 2 or Level[tile_row][tile_col] == 9)):
+                
+                if not check_ghost_collision(new_pinky_x, new_pinky_y, pinky_x, pinky_y):
+                    visited_pink_Stack.clear()
+                    pinky_x = new_pinky_x
+                    pinky_y = new_pinky_y
+            else:
+        # If invalid direction, pick random legal direction if needed
+                 nowDirections = (0, 0)        
+
+        # Move Orange depending on its current direction state
+            if orange_directions != (0, 0):
+                new_orange_dir = get_opposite_direction(orange_directions)
+                new_orange_x = orange_x + new_orange_dir[0]
+                new_orange_y = orange_y + new_orange_dir[1]
+                if not check_ghost_collision(new_orange_x, new_orange_y, orange_x, orange_y):
+                    orange_directions = new_orange_dir
+                    orange_x = new_orange_x
+                    orange_y = new_orange_y
+            else:
+                orange_path = []
+                orange_target_pos = None
+                new_orange_dir = get_opposite_direction(prev_pinky_direction)
+                new_orange_x = orange_x + new_orange_dir[0]
+                new_orange_y = orange_y + new_orange_dir[1]
+                if not check_ghost_collision(new_orange_x, new_orange_y, orange_x, orange_y):
+                    orange_directions = new_orange_dir
+                    orange_x = new_orange_x
+                    orange_y = new_orange_y
+                else:
+                    orange_directions = (0, 0)
 
         # Vẽ Blinky
         blinky_astar(Cell_Width, Cell_Height)
 
-        if(only1 == 0):
-            bfs(Cell_Width, Cell_Height)
-            only1 = 1
+        
         # #Vẽ Blue
-        blue_bfs(Cell_Width, Cell_Height, list_duongdi)
+        # if(only1 == 0):
+        #     bfs(Cell_Width, Cell_Height)
+        #     only1 = 1
+        # blue_bfs(Cell_Width, Cell_Height, list_duongdi)
 
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
@@ -951,7 +1149,7 @@ while run:
             if event.key == pygame.K_SPACE and direction_type == 4:
                 Catched = False
                 # Pinky
-                pinky_x = 390 # Đây là trường hợp Pinky ở trong lồng
+                pinky_x = 390
                 pinky_y = 360
                 chosen_direction = random.choice(["Right", "Left"])
                 nowDirections = (0, 0)
@@ -961,11 +1159,15 @@ while run:
                 gate_state = 0              
                 check_road = False          
                 # Orange
-                orange_x = 420  
-                orange_y = 288
+                orange_x = 450
+                orange_y = 360
                 orange_path.clear()
-                orange_target_pos = None 
-                last_path_calc_time = 0 
+                orange_target_pos = None
+                last_path_calc_time = 0
+                orange_gate_state = 0
+                orange_directions = Up
+                orange_stuck_counter = 0
+                orange_delay_frames = 180
                 # Blue
                 blue_x = 390 + 30 * 3
                 blue_y = 360 
@@ -986,10 +1188,11 @@ while run:
                 blinky_path.clear()
                 nowDirectionsBlinky = (0, 0)
                 # Pacman
-                pacman_x, pacman_y = 420, 576
+                pacman_x = 420 
+                pacman_y = 360
                 direction_command = (0, 0)
                 new_direction_command = (0, 0)
-                direction_type = 0
+                direction_type = -1
 
 
     pygame.display.flip()   # Tải lại hiệu ứng mới
