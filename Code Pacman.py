@@ -45,6 +45,8 @@ blinky_image = pygame.image.load("Images/Red.jpg")  # Đường dẫn đến ả
 blinky_image = pygame.transform.scale(blinky_image, (Cell_Width, Cell_Height))  # Resize ảnh
 pacman_image = pygame.image.load("Images/Pacman.jpg")  # Đường dẫn đến ảnh Pacman
 pacman_image = pygame.transform.scale(pacman_image, (Cell_Width, Cell_Height))  # Resize ảnh
+blue_image = pygame.image.load("Blue.png") # Đường dẫn đến ảnh Blue
+blue_image = pygame.transform.scale(blue_image, (Cell_Width, Cell_Height)) # Resize ảnh
 
 # Khung và Tiêu đề
 Screen = pygame.display.set_mode((Width, Height))
@@ -75,7 +77,7 @@ def draw_instructions():
     # vẽ lên màn hình 
     Screen.blit(text_surface_1, text_rect_1)
 
-# --- Helper Functions ---
+# Hàm hiển thị Game Over 
 def draw_game_over():
     font = pygame.font.Font(None, 80)
     # Khởi tạo font (None, 40)
@@ -288,7 +290,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
                and (pinky_x // Cell_Width) == (pinky_x / Cell_Width) 
                and (pinky_y // Cell_Height) == (pinky_y / Cell_Height)):
                 # Kiểm tra xong quanh còn đường đi chưa đi không?
-                random.shuffle(shuffled_Directions)          
+                random.shuffle(shuffled_Directions)        
                 # Duyệt qua tất cả các hướng theo thứ tự ngẫu nhiên   
                 for name, direction in shuffled_Directions:
                     if(Level[(pinky_y + direction[1] * (24 // Speed)) // Cell_Height][(pinky_x + direction[0] * (30 // Speed)) // Cell_Width] <= 2 
@@ -368,7 +370,7 @@ def pinky_dfs(Cell_Width, Cell_Height):
         # Thiết lập lại trạng thái
         pinky_state = 0
         check_road = False
-    
+
     # Vẽ Pinky
     draw_pinky(pinky_x, pinky_y, Cell_Width, Cell_Height)
 
@@ -378,7 +380,154 @@ def Test_DFS():
     for(x, y) in road_Stack:
         pygame.draw.circle(Screen, 'pink', (x + 0.5 * Cell_Width, y + 0.5 * Cell_Height), 4)
 
+# # # Biến cho Blue ---------------------------------------------------------------------------------------------------------------
+#Vị trí ban đầu của Blue
+blue_x = 390 + 30 * 3
+blue_y = 360 
+#bfs
+global list_duongdi, blue_nowDirections, i, j, visited, x_temp, y_temp
+list_duongdi = []
+blue_nowDirections = (0, -1 * Speed)  # Trạng thái ban đầu chưa có hướng đi
+list_duongdi.append([((-1 * Speed, 0), (450, 360))])  # tạo list 0
+list_duongdi[0].append(((0, -1 * Speed), (450, 288)))  # thêm vào list 0
+i = 0
+j = i 
+visited = []
+visited.append((blue_x, blue_y))
+x_temp = 450
+y_temp = 288
 
+#Vẽ Blue
+def draw_blue(blue_x, blue_y, Cell_Width, Cell_Height):
+    if blue_image:
+        Screen.blit(blue_image, (blue_x, blue_y))
+    else:
+        pygame.draw.circle(Screen, Blue, blue_x, blue_y, 4)
+
+def bfs(Cell_Width, Cell_Height):
+    global list_duongdi, blue_nowDirections, i, j, visited, x_temp, y_temp
+
+    while(x_temp != pacman_x or y_temp != pacman_y):
+
+        blue_nowDirections, x_temp, y_temp = list_duongdi[i][-1][0], list_duongdi[i][-1][1][0], list_duongdi[i][-1][1][1]
+        opposite = tuple(-d for d in blue_nowDirections)
+        if(Road[y_temp // Cell_Height][x_temp // Cell_Width] >= 1
+            and x_temp // Cell_Width == x_temp / Cell_Width
+            and y_temp // Cell_Height == y_temp / Cell_Height
+            ):
+            for direction in shuffled_Directions:
+                blue_nowDirections, x_temp, y_temp = list_duongdi[i][-1][0], list_duongdi[i][-1][1][0], list_duongdi[i][-1][1][1]
+                if(direction[0] == "Left" and (x_temp, y_temp) == (0, 360) 
+                    and (870, 360) not in visited
+                    ):
+                    blue_nowDirections = direction[1]
+                    x_temp = 870
+                    y_temp = 360
+                    visited.append((x_temp, y_temp))
+
+                    j = j + 1
+                    list_duongdi.append(copy.deepcopy(list_duongdi[i]))
+                    list_duongdi[j].append((blue_nowDirections, (x_temp, y_temp)))
+
+                    continue
+                elif(direction[0] == "Left" and (x_temp, y_temp) == (0, 360)
+                     and (870, 360) in visited):
+                    continue
+                if(direction[0] == "Right" and (x_temp, y_temp) == (870, 360) 
+                    and (0, 360) not in visited
+                    ):
+                    blue_nowDirections = direction[1]
+                    x_temp = 0
+                    y_temp = 360
+                    visited.append((x_temp, y_temp))
+
+                    j = j + 1
+                    list_duongdi.append(copy.deepcopy(list_duongdi[i]))
+                    list_duongdi[j].append((blue_nowDirections, (x_temp, y_temp)))
+                    continue     
+                elif(direction[0] == "Right" and (x_temp, y_temp) == (870, 360)
+                     and (0, 360) in visited):
+                    continue
+                if(direction[0] == "Down" and Level[(y_temp + direction[1][1] * 24 // 2) // Cell_Height][(x_temp + direction[1][0] * 30 // 2) // Cell_Width] == 9):
+                    continue
+                if(Level[(y_temp + direction[1][1] * 24 // 2) // Cell_Height][(x_temp + direction[1][0] * 30 // 2) // Cell_Width] <= 2
+                    and (x_temp + direction[1][0] * 30 // 2, y_temp + direction[1][1] * 24 // 2) not in visited 
+                    and ((x_temp + direction[1][0] * 30 // 2) > 0 
+                         or (x_temp + direction[1][0] * 30 // 2 == 0 and y_temp + direction[1][1] * 24 // 2 == 360)
+                         or (x_temp + direction[1][0] * 30 // 2 == 870 and y_temp + direction[1][1] * 24 // 2 == 360)
+                         )
+                    and (y_temp + direction[1][1] * 24 // 2) > 0
+                    and direction[1] != opposite
+                    ):
+
+                    blue_nowDirections = direction[1]
+                    x_temp += direction[1][0] * 30 // 2
+                    y_temp += direction[1][1] * 24 // 2
+
+                    visited.append((x_temp, y_temp))
+                    
+                    j = j + 1
+
+                    list_duongdi.append(copy.deepcopy(list_duongdi[i]))
+                    list_duongdi[j].append((blue_nowDirections, (x_temp, y_temp)))
+
+                if(x_temp == pacman_x and y_temp == pacman_y):
+                    print("Pacman caught")
+                    break
+        if(x_temp == pacman_x and y_temp == pacman_y):
+            print("Pacman caught")
+            break
+        i = i + 1 
+
+# inky bfs
+global k 
+k = 0
+def blue_bfs(Cell_Width, Cell_Height, list_duongdi):
+    global blue_x, blue_y
+    
+    draw_blue(blue_x, blue_y, Cell_Width, Cell_Height)
+
+    #bfs 
+    global j  
+    global k
+    if(k <= len(list_duongdi[j]) - 1 ):
+        blue_nowDirections1 = list_duongdi[j][k]
+
+        if (
+            (blue_x, blue_y) == (0, 360) 
+            and blue_nowDirections1[0] == (-2, 0)
+            and (pinky_x // Cell_Width, pinky_y // Cell_Height) != (870, 360)
+            and (orange_x // Cell_Width, orange_y // Cell_Height) != (870, 360)
+            and (blinky_x // Cell_Width, blinky_y // Cell_Height) != (870, 360)
+        ):
+            blue_x = 870
+            blue_y = 360
+            k += 1
+
+        elif (
+            (blue_x, blue_y) == (870, 360) 
+            and blue_nowDirections1[0] == (2, 0)
+            and (pinky_x // Cell_Width, pinky_y // Cell_Height) != (0, 360)
+            and (orange_x // Cell_Width, orange_y // Cell_Height) != (0, 360)
+            and (blinky_x // Cell_Width, blinky_y // Cell_Height) != (0, 360)
+        ):
+            blue_x = 0
+            blue_y = 360
+            k += 1
+
+        elif (
+            (blue_x + blue_nowDirections1[0][0]) // Cell_Width, (blue_y + blue_nowDirections1[0][1]) // Cell_Height
+        ) != (pinky_x // Cell_Width, pinky_y // Cell_Height) and (
+            (blue_x + blue_nowDirections1[0][0]) // Cell_Width, (blue_y + blue_nowDirections1[0][1]) // Cell_Height
+        ) != (orange_x // Cell_Width, orange_y // Cell_Height) and (
+            (blue_x + blue_nowDirections1[0][0]) // Cell_Width, (blue_y + blue_nowDirections1[0][1]) // Cell_Height
+        ) != (blinky_x // Cell_Width, blinky_y // Cell_Height):
+            
+            blue_x += blue_nowDirections1[0][0]
+            blue_y += blue_nowDirections1[0][1]
+
+            if (blue_x, blue_y) == (list_duongdi[j][k][1][0], list_duongdi[j][k][1][1]):
+                k += 1
 
 # # # Biến cho Blinky -------------------------------------------------------------------------------------------------------------
 blinky_x = 420
@@ -453,7 +602,7 @@ def draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height):
     else:
         pygame.draw.circle(Screen, Red, blinky_x, blinky_y, 4)
 
-# Tốc độ Blinky mỗi frame (đi 2 pixel mỗi frame)
+# Tốc độ Blinky mỗi frame
 BLINKY_SPEED = Speed
 blinky_path = []
 global nowDirectionsBlinky
@@ -615,7 +764,7 @@ def draw_orange(orange_x, orange_y, Cell_Width, Cell_Height):
 # Vị trí ban đầu của Pacman
 global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
 pacman_x = 420
-pacman_y = 576
+pacman_y = 360
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
 new_direction_command = (0, 0)
@@ -720,6 +869,13 @@ key_to_direction = {
 run = True
 Catched = False
 start = time.time()
+
+# Biến hỗ trợ Blue 
+global old_pacman_post
+old_pacman_post = (pacman_x, pacman_y)  
+global only1
+only1 = 0
+
 while run:
     Timer.tick(FPS)
     # Vẽ bản đồ
@@ -742,13 +898,21 @@ while run:
 
         # Vẽ Blinky
         blinky_astar(Cell_Width, Cell_Height)
-        
+
+        if(only1 == 0):
+            bfs(Cell_Width, Cell_Height)
+            only1 = 1
+        # #Vẽ Blue
+        blue_bfs(Cell_Width, Cell_Height, list_duongdi)
+
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
             Catched = True
         elif(pacman_x == orange_x and pacman_y == orange_y):
             Catched = True
         elif(pacman_x == blinky_x and pacman_y == blinky_y):
+            Catched = True
+        elif(pacman_x == blue_x and pacman_y == blue_y):
             Catched = True
 
         # Vẽ Pacman
@@ -759,7 +923,9 @@ while run:
             Catched = True
         elif(pacman_x == orange_x and pacman_y == orange_y):
             Catched = True
-        if(pacman_x == blinky_x and pacman_y == blinky_y):
+        elif(pacman_x == blinky_x and pacman_y == blinky_y):
+            Catched = True
+        elif(pacman_x == blue_x and pacman_y == blue_y):
             Catched = True
 
     # Check for events
@@ -800,11 +966,31 @@ while run:
                 orange_path.clear()
                 orange_target_pos = None 
                 last_path_calc_time = 0 
+                # Blue
+                blue_x = 390 + 30 * 3
+                blue_y = 360 
+                list_duongdi.clear()
+                blue_nowDirections = (0, -1 * Speed)  # Trạng thái ban đầu chưa có hướng đi
+                list_duongdi.append([((-1 * Speed, 0), (450, 360))])  # tạo list 0
+                list_duongdi[0].append(((0, -1 * Speed), (450, 288)))  # thêm vào list 0
+                i = 0
+                j = i 
+                visited.clear()
+                visited.append((blue_x, blue_y))
+                x_temp = 450
+                y_temp = 288
+                k = 0
+                # Blinky
+                blinky_x = 420
+                blinky_y = 360
+                blinky_path.clear()
+                nowDirectionsBlinky = (0, 0)
                 # Pacman
                 pacman_x, pacman_y = 420, 576
                 direction_command = (0, 0)
                 new_direction_command = (0, 0)
                 direction_type = 0
+
 
     pygame.display.flip()   # Tải lại hiệu ứng mới
 
