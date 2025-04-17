@@ -162,10 +162,6 @@ def draw_map(Cell_Width=Cell_Width, Cell_Height=Cell_Height, Flicker=Flicker):
                     3
                 )
 
-# # # Biến cho các ghost khác
-global blue_x, blue_y
-blue_x = 0
-blue_y = 0
 # Hàm vẽ đường đi để kiểm tra các ngã rẽ và đường đi đúng số chưa trong Road 
 def draw_road(Cell_Width=Cell_Width, Cell_Height=Cell_Height):
     for i in range(len(Road)):
@@ -382,6 +378,7 @@ def Test_DFS():
 
 # # # Biến cho Blue ---------------------------------------------------------------------------------------------------------------
 #Vị trí ban đầu của Blue
+global blue_x, blue_y
 blue_x = 390 + 30 * 3
 blue_y = 360 
 #bfs
@@ -665,7 +662,7 @@ def get_opposite_direction(direction):
 
 # Hàm kiểm tra va chạm tường
 def check_collision(next_x, next_y, exclude_self=True):
-    global pinky_x, pinky_y, pacman_x, pacman_y, blue_x, blue_y, red_x, red_y, orange_x, orange_y
+    global pinky_x, pinky_y, pacman_x, pacman_y, blue_x, blue_y, blinky_x, blinky_y, orange_x, orange_y
     # Kiểm tra xem vị trí tiếp theo có phải là cổng không
     next_row = int(next_y // Cell_Height)
     next_col = int(next_x // Cell_Width)
@@ -679,7 +676,7 @@ def check_collision(next_x, next_y, exclude_self=True):
         (pinky_x, pinky_y),
         (pacman_x, pacman_y),
         (blue_x, blue_y),
-        (red_x, red_y),
+        (blinky_x, blinky_y),
         (orange_x, orange_y)
     ]
     for pos_x, pos_y in other_positions:
@@ -691,14 +688,14 @@ def check_collision(next_x, next_y, exclude_self=True):
 
 # Kiểm tra va chạm ma
 def check_ghost_collision(next_x, next_y, self_x, self_y):
-    global pinky_x, pinky_y, blue_x, blue_y, red_x, red_y, orange_x, orange_y
+    global pinky_x, pinky_y, blue_x, blue_y, blinky_x, blinky_y, orange_x, orange_y
     next_tile = (int(next_y // Cell_Height), int(next_x // Cell_Width))
     self_tile = (int(self_y // Cell_Height), int(self_x // Cell_Width))
 
     ghost_tiles = [
         (int(pinky_y // Cell_Height), int(pinky_x // Cell_Width)),
         (int(blue_y // Cell_Height), int(blue_x // Cell_Width)),
-        (int(red_y // Cell_Height), int(red_x // Cell_Width)),
+        (int(blinky_y // Cell_Height), int(blinky_x // Cell_Width)),
         (int(orange_y // Cell_Height), int(orange_x // Cell_Width))
     ]
 
@@ -1095,7 +1092,6 @@ while run:
 
         # Vẽ Blinky
         blinky_astar(Cell_Width, Cell_Height)
-
         
         # #Vẽ Blue
         # if(only1 == 0):
@@ -1116,7 +1112,7 @@ while run:
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
 
-        # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
+        # Bắt nhau trường hợp cách nhau 1 đơn vị Speed
         if(pacman_x == pinky_x and pacman_y == pinky_y):
             Catched = True
         elif(pacman_x == orange_x and pacman_y == orange_y):
@@ -1168,6 +1164,7 @@ while run:
                 orange_directions = Up
                 orange_stuck_counter = 0
                 orange_delay_frames = 180
+                game_started = False
                 # Blue
                 blue_x = 390 + 30 * 3
                 blue_y = 360 
