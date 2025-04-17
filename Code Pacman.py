@@ -7,6 +7,10 @@ import math
 import random
 
 import heapq
+import time # To potentially limit path recalculation frequency
+import tracemalloc
+
+tracemalloc.start()
 
 pygame.init()
 
@@ -19,7 +23,7 @@ Flicker = False
 PI = math.pi
 
 # Hướng đi
-Speed = 1
+Speed = 2
 Up = (0, -1 * Speed)
 Down = (0, Speed)
 Left = (-1 * Speed, 0)
@@ -211,10 +215,8 @@ def pinky_dfs(Cell_Width, Cell_Height):
                     and (pinky_x + nowDirections[0] * (30 // Speed), pinky_y + nowDirections[1] * (24 // Speed)) != (blinky_x, blinky_y)):
                 pinky_x += nowDirections[0]
                 pinky_y += nowDirections[1]
-                print(2)
             else: 
                 nowDirections = (0, 0)
-                print(1)
         # Đang ở trong lồng, đi ra ngoài
         else:
             if(((pinky_x, pinky_y) == (420, 360)) or ((pinky_x, pinky_y) == (420, 336)) or ((pinky_x, pinky_y) == (420, 384)) 
@@ -428,36 +430,43 @@ def draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height):
         pygame.draw.circle(Screen, Red, blinky_x, blinky_y, 4)
 
 # Tốc độ Blinky mỗi frame (đi 2 pixel mỗi frame)
-BLINKY_SPEED = 1
+BLINKY_SPEED = 2
+
+last_pacman_pos = None
 blinky_path = []
-global nowDirectionsBlinky
-nowDirectionsBlinky = (0, 0)
+blinky_target_index = 0
+
 def blinky_astar(Cell_Width, Cell_Height):
-    global blinky_x, blinky_y, nowDirectionsBlinky, gate_state, pacman_x, pacman_y
+    global blinky_x, blinky_y, nowDirectionsBlinky, last_pacman_pos, blinky_path, blinky_target_index
 
     blinky_pos = (blinky_x, blinky_y)
     pacman_pos = (pacman_x, pacman_y)
 
     if (blinky_x >= 360 and blinky_x <= 510) and (blinky_y > 288 and blinky_y <= 384):
-        # Trong lồng, đi lên
         nowDirectionsBlinky = Up
         blinky_x += nowDirectionsBlinky[0]
         blinky_y += nowDirectionsBlinky[1]
     else:
-        # Dùng A* để tìm đường
-        path = astar_path(blinky_pos, pacman_pos, Cell_Width, Cell_Height)
-        if path and len(path) > 0:
-            next_x, next_y = path[0]
+        if last_pacman_pos != pacman_pos or blinky_target_index >= len(blinky_path):
+            path = astar_path(blinky_pos, pacman_pos, Cell_Width, Cell_Height)
+            blinky_path = path if path else []
+            blinky_target_index = 0
+            last_pacman_pos = pacman_pos
 
+        if blinky_target_index < len(blinky_path):
+            next_x, next_y = blinky_path[blinky_target_index]
             dx = next_x - blinky_x
             dy = next_y - blinky_y
-            distance = math.hypot(dx, dy)
 
-            if distance != 0:
-                move_x = int(BLINKY_SPEED * dx // distance)
-                move_y = int(BLINKY_SPEED * dy //  distance)
-                blinky_x += move_x
-                blinky_y += move_y
+            move_x = BLINKY_SPEED if dx > 0 else -BLINKY_SPEED if dx < 0 else 0
+            move_y = BLINKY_SPEED if dy > 0 else -BLINKY_SPEED if dy < 0 else 0
+
+            blinky_x += move_x
+            blinky_y += move_y
+
+            # Chỉ tăng index khi đã đến vị trí đó (xấp xỉ)
+            if abs(blinky_x - next_x) < BLINKY_SPEED and abs(blinky_y - next_y) < BLINKY_SPEED:
+                blinky_target_index += 1
 
     draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height)
 
@@ -472,7 +481,7 @@ def Test_DFS():
 # # # Biến cho Pacman ----------------------------------------------------------------------------
 # Vị trí ban đầu của Pacman
 global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
-pacman_x = 12 * 30
+pacman_x = 2 * 30
 pacman_y = 30 * 24
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
@@ -525,7 +534,16 @@ def draw_Pacman(Cell_Width, Cell_Height):
 
 run = True
 Catched = False
+start = time.time()
 
+def Calculate(Catched):
+    if(Catched == True):
+        end = time.time()
+        print(f"Thời gian chạy: {end - start:.4f} giây")
+        current, peak = tracemalloc.get_traced_memory()
+        print(f"[Tracemalloc] Đang dùng: {current/1024**2:.2f} MB, Đỉnh: {peak/1024**2:.2f} MB")
+        print(f"Số lượng ô đã đi qua: ")
+    
 # Gán key tương ứng với hướng
 key_to_direction = {
     pygame.K_RIGHT: 0,
@@ -538,6 +556,7 @@ key_to_direction = {
     pygame.K_s: 3,
 }
 
+
 # Khởi tạo ban đầu
 direction_type = -1
 new_direction_command = (0, 0)
@@ -546,18 +565,19 @@ while run:
     Timer.tick(FPS)
     # Vẽ bản đồ
     Screen.fill((0, 0, 0))  # Vẽ lại nền đen
+    Calculate(Catched)
     if Catched:
         draw_game_over()
     else:
         draw_map()
         # Vẽ Pinky
         # Test_DFS()
-        pinky_dfs(Cell_Width, Cell_Height)
+        # pinky_dfs(Cell_Width, Cell_Height)
         blinky_astar(Cell_Width, Cell_Height)
         # # Vẽ Orange
         # draw_orange(Cell_Width, Cell_Height)
         # Bắt nhau trường hợp cách nhau 0 đơn vị Speed
-        if(pacman_x == pinky_x and pacman_y == pinky_y) or (pacman_x == blinky_x and pacman_y == blinky_y):
+        if(pacman_x == pinky_x and pacman_y == pinky_y) or (pacman_x == blinky_x and pacman_y == blinky_y) or (abs(blinky_x - pacman_x) == Cell_Width and abs(blinky_y - pacman_y) == 0) or (abs(blinky_y - pacman_y) == Cell_Height and abs(blinky_x - pacman_x) == 0):
             Catched = True
         # Vẽ Pacman
         draw_Pacman(Cell_Width, Cell_Height)
@@ -609,3 +629,4 @@ while run:
     pygame.display.flip()   # Tải lại hiệu ứng mới
 
 pygame.quit()
+tracemalloc.stop()
