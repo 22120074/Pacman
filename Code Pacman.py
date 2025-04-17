@@ -45,7 +45,7 @@ blinky_image = pygame.image.load("Images/Red.jpg")  # Đường dẫn đến ả
 blinky_image = pygame.transform.scale(blinky_image, (Cell_Width, Cell_Height))  # Resize ảnh
 pacman_image = pygame.image.load("Images/Pacman.jpg")  # Đường dẫn đến ảnh Pacman
 pacman_image = pygame.transform.scale(pacman_image, (Cell_Width, Cell_Height))  # Resize ảnh
-blue_image = pygame.image.load("Blue.png") # Đường dẫn đến ảnh Blue
+blue_image = pygame.image.load("Images/Blue.png") # Đường dẫn đến ảnh Blue
 blue_image = pygame.transform.scale(blue_image, (Cell_Width, Cell_Height)) # Resize ảnh
 
 # Khung và Tiêu đề
