@@ -23,7 +23,7 @@ Road = copy.deepcopy(road)
 Flicker = False
 PI = math.pi
 
-# Hướng đi
+# Hướng đi và tốc độ
 Speed = 2
 Up = (0, -1 * Speed)
 Down = (0, Speed)
@@ -377,8 +377,6 @@ def Test_DFS():
         pygame.draw.circle(Screen, 'pink', (x + 0.5 * Cell_Width, y + 0.5 * Cell_Height), 4)
 
 # # # Biến cho Blue ---------------------------------------------------------------------------------------------------------------
-
-
 #Vẽ Blue
 def draw_blue(blue_x, blue_y, Cell_Width, Cell_Height):
     if blue_image:
@@ -403,8 +401,6 @@ y_temp = 288
 
 def bfs(Cell_Width, Cell_Height):
     global list_duongdi, blue_nowDirections, i, j, visited, x_temp, y_temp
-
-
 
     while(x_temp != (pacman_x ) or y_temp != (pacman_y) ):
 
@@ -491,7 +487,6 @@ def blue_bfs(Cell_Width, Cell_Height, list_duongdi):
 
         blue_nowDirections1 = list_duongdi[j][k]
 
-
         if (
             (blue_x, blue_y) == (0, 360) 
             and blue_nowDirections1[0] == (-2, 0)
@@ -540,7 +535,6 @@ def blue_bfs(Cell_Width, Cell_Height, list_duongdi):
 
             bfs(Cell_Width, Cell_Height)
            
-
 # # # Biến cho Blinky -------------------------------------------------------------------------------------------------------------
 blinky_x = 420
 blinky_y = 360
@@ -614,37 +608,44 @@ def draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height):
     else:
         pygame.draw.circle(Screen, Red, blinky_x, blinky_y, 4)
 
-# Tốc độ Blinky mỗi frame
+# Tốc độ Blinky mỗi frame (đi [Speed] pixel mỗi frame)
 BLINKY_SPEED = Speed
+
+last_pacman_pos = None
 blinky_path = []
-global nowDirectionsBlinky
-nowDirectionsBlinky = (0, 0)
+blinky_target_index = 0
+
 def blinky_astar(Cell_Width, Cell_Height):
-    global blinky_x, blinky_y, nowDirectionsBlinky, gate_state, pacman_x, pacman_y
+    global blinky_x, blinky_y, nowDirectionsBlinky, last_pacman_pos, blinky_path, blinky_target_index
 
     blinky_pos = (blinky_x, blinky_y)
     pacman_pos = (pacman_x, pacman_y)
 
     if (blinky_x >= 360 and blinky_x <= 510) and (blinky_y > 288 and blinky_y <= 384):
-        # Trong lồng, đi lên
         nowDirectionsBlinky = Up
         blinky_x += nowDirectionsBlinky[0]
         blinky_y += nowDirectionsBlinky[1]
     else:
-        # Dùng A* để tìm đường
-        path = astar_path(blinky_pos, pacman_pos, Cell_Width, Cell_Height)
-        if path and len(path) > 0:
-            next_x, next_y = path[0]
+        if last_pacman_pos != pacman_pos or blinky_target_index >= len(blinky_path):
+            path = astar_path(blinky_pos, pacman_pos, Cell_Width, Cell_Height)
+            blinky_path = path if path else []
+            blinky_target_index = 0
+            last_pacman_pos = pacman_pos
 
+        if blinky_target_index < len(blinky_path):
+            next_x, next_y = blinky_path[blinky_target_index]
             dx = next_x - blinky_x
             dy = next_y - blinky_y
-            distance = math.hypot(dx, dy)
 
-            if distance != 0:
-                move_x = int(BLINKY_SPEED * dx // distance)
-                move_y = int(BLINKY_SPEED * dy //  distance)
-                blinky_x += move_x
-                blinky_y += move_y
+            move_x = BLINKY_SPEED if dx > 0 else -BLINKY_SPEED if dx < 0 else 0
+            move_y = BLINKY_SPEED if dy > 0 else -BLINKY_SPEED if dy < 0 else 0
+
+            blinky_x += move_x
+            blinky_y += move_y
+
+            # Chỉ tăng index khi đã đến vị trí đó (xấp xỉ)
+            if abs(blinky_x - next_x) < BLINKY_SPEED and abs(blinky_y - next_y) < BLINKY_SPEED:
+                blinky_target_index += 1
 
     draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height)
 
@@ -661,7 +662,7 @@ last_path_calc_time = 0
 orange_gate_state = 0
 orange_directions = Up
 orange_stuck_counter = 0
-orange_delay_frames = 180  # 3 giây delay tại 60 FPS
+orange_delay_frames = 0  # 3 giây delay tại 60 FPS --> 180 frames
 
 # Biến kiểm tra game đã bắt đầu hay chưa
 global game_started
@@ -718,7 +719,6 @@ def check_ghost_collision(next_x, next_y, self_x, self_y):
         if ghost_tile == next_tile and next_tile != self_tile:
             return True
     return False
-
 
 # Tìm đường đi bằng UCS
 def find_ucs_path(start_pos, goal_pos):
@@ -847,9 +847,9 @@ def update_orange_movement():
                     orange_target_pos = orange_path.pop(0) 
                 else:
                     orange_target_pos = None
-            else:
-                orange_path = []
-                orange_target_pos = None 
+            # else:
+            #     orange_path = []
+            #     orange_target_pos = None 
             last_path_calc_time = current_time 
 
         # Di chuyển Orange theo mục tiêu
@@ -900,7 +900,6 @@ def update_orange_movement():
                 next_x = orange_x + current_direction[0]
                 next_y = orange_y + current_direction[1]
                 if not check_collision(next_x, next_y) and not check_ghost_collision(next_x, next_y, orange_x, orange_y):
-
                     orange_x = next_x
                     orange_y = next_y
                 else:
@@ -921,6 +920,7 @@ pacman_x = 420
 pacman_y = 576
 # Hướng đi hiện tại của Pacman
 direction_command = (0, 0)
+# Hướng đi mới của Pacman - Sẽ thực thi khi đến ngã rẽ hoặc khi đi được hướng đi mới 
 new_direction_command = (0, 0)
 direction_type = -1
 
@@ -928,6 +928,7 @@ direction_type = -1
 def draw_Pacman(Cell_Width, Cell_Height):
     global pacman_x, pacman_y, direction_command, new_direction_command, direction_type
     opposite = tuple(-d for d in direction_command)
+    # Vị trí 2 đường thông nhau 
     if(((pacman_x, pacman_y) == (0, 360)) and direction_command == Left):
         pacman_x = 870
         pacman_y = 360
@@ -935,6 +936,8 @@ def draw_Pacman(Cell_Width, Cell_Height):
         pacman_x = 0
         pacman_y = 360
     else:
+        # Pacman đi đến ngã rẽ, kiểm tra có thể đi được không thì đi theo new_direction_command
+        # Còn không sẽ đi tiếp hướng mặc định 
         if(Road[(pacman_y) // Cell_Height][pacman_x // Cell_Width] >= 2
                 and (pacman_x // Cell_Width) == (pacman_x / Cell_Width)
                 and (pacman_y // Cell_Height) == (pacman_y / Cell_Height)):
@@ -945,6 +948,7 @@ def draw_Pacman(Cell_Width, Cell_Height):
             elif(Level[(pacman_y + direction_command[1] * (24 // Speed)) // Cell_Height][(pacman_x + direction_command[0] * (30 // Speed)) // Cell_Width] <= 2):
                 pacman_x += direction_command[0]
                 pacman_y += direction_command[1]
+        # Pacman đi thẳng hoặc ngược lại 
         elif(Road[(pacman_y) // Cell_Height][pacman_x // Cell_Width] == 1
                 and (pacman_x // Cell_Width) == (pacman_x / Cell_Width)
                 and (pacman_y // Cell_Height) == (pacman_y / Cell_Height)
@@ -964,6 +968,7 @@ def draw_Pacman(Cell_Width, Cell_Height):
             else:
                 pacman_x += direction_command[0]
                 pacman_y += direction_command[1]
+    # Vẽ Pacman 
     if pacman_image:  
         Screen.blit(pacman_image,  (pacman_x, pacman_y))
     else:
@@ -1024,7 +1029,6 @@ run = True
 Catched = False
 start = time.time()
 game_started = True
-
 
 # Biến hỗ trợ Blue   
 global only1
@@ -1178,8 +1182,7 @@ while run:
                 orange_gate_state = 0
                 orange_directions = Up
                 orange_stuck_counter = 0
-                orange_delay_frames = 180
-                game_started = False
+                orange_delay_frames = 0
                 # Blue
                 blue_x = 390 + 30 * 3
                 blue_y = 360 
@@ -1205,7 +1208,6 @@ while run:
                 direction_command = (0, 0)
                 new_direction_command = (0, 0)
                 direction_type = -1
-
 
     pygame.display.flip()   # Tải lại hiệu ứng mới
 
