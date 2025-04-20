@@ -544,7 +544,7 @@ def heuristic(a, b):
 
 def is_walkable(x, y):
     if 0 <= y < len(boards) and 0 <= x < len(boards[0]):
-        return boards[y][x] in [0, 1, 2]  # có thể tuỳ chỉnh thêm
+        return boards[y][x] in [0, 1, 2] 
     return False
 
 # Hàm A* để tìm đường đi:
@@ -626,28 +626,42 @@ def blinky_astar(Cell_Width, Cell_Height):
         blinky_x += nowDirectionsBlinky[0]
         blinky_y += nowDirectionsBlinky[1]
     else:
+        # Nếu Pacman đổi vị trí hoặc đi hết đường
         if last_pacman_pos != pacman_pos or blinky_target_index >= len(blinky_path):
             path = astar_path(blinky_pos, pacman_pos, Cell_Width, Cell_Height)
             blinky_path = path if path else []
             blinky_target_index = 0
             last_pacman_pos = pacman_pos
 
+        # Di chuyển theo từng bước pixel
         if blinky_target_index < len(blinky_path):
-            next_x, next_y = blinky_path[blinky_target_index]
-            dx = next_x - blinky_x
-            dy = next_y - blinky_y
+            target_x, target_y = blinky_path[blinky_target_index]
 
-            move_x = BLINKY_SPEED if dx > 0 else -BLINKY_SPEED if dx < 0 else 0
-            move_y = BLINKY_SPEED if dy > 0 else -BLINKY_SPEED if dy < 0 else 0
+            # Chỉ đổi hướng khi Blinky đang ở chính giữa ô
+            if blinky_x % Cell_Width == 0 and blinky_y % Cell_Height == 0:
+                dx = target_x - blinky_x
+                dy = target_y - blinky_y
+                if dx > 0:
+                    nowDirectionsBlinky = Right
+                elif dx < 0:
+                    nowDirectionsBlinky = Left
+                elif dy > 0:
+                    nowDirectionsBlinky = Down
+                elif dy < 0:
+                    nowDirectionsBlinky = Up
 
-            blinky_x += move_x
-            blinky_y += move_y
+            # Di chuyển theo hướng hiện tại
+            blinky_x += nowDirectionsBlinky[0]
+            blinky_y += nowDirectionsBlinky[1]
 
-            # Chỉ tăng index khi đã đến vị trí đó (xấp xỉ)
-            if abs(blinky_x - next_x) < BLINKY_SPEED and abs(blinky_y - next_y) < BLINKY_SPEED:
+            # Nếu đã đến vị trí mục tiêu thì chuyển sang mục tiêu tiếp theo
+            if abs(blinky_x - target_x) < BLINKY_SPEED and abs(blinky_y - target_y) < BLINKY_SPEED:
+                blinky_x = target_x
+                blinky_y = target_y
                 blinky_target_index += 1
 
     draw_blinky(blinky_x, blinky_y, Cell_Width, Cell_Height)
+
 
 # # # Biến cho Orange -----------------------------------------------------------------------------------------------------------------
 # Vị trí ban đầu của Orange
